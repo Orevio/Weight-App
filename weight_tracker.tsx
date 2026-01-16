@@ -13,7 +13,9 @@ import {
     User,
     Scale,
     Pencil,
-    X
+    X,
+    ChevronDown,
+    ChevronUp
 } from 'lucide-react';
 
 export default function WeightTracker() {
@@ -22,19 +24,21 @@ export default function WeightTracker() {
         const saved = localStorage.getItem('weightEntries');
         if (saved) return JSON.parse(saved);
         return [
-            { date: '2026-01-14', weight: 83.1 },
-            { date: '2026-01-12', weight: 83.6 },
-            { date: '2026-01-10', weight: 83.1 },
-            { date: '2026-01-08', weight: 83.8 },
-            { date: '2026-01-05', weight: 84.0 },
-            { date: '2026-01-01', weight: 84.5 },
-        ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            { id: 1, date: '2026-01-14', weight: 83.1 },
+            { id: 2, date: '2026-01-12', weight: 83.6 },
+            { id: 3, date: '2026-01-10', weight: 83.1 },
+            { id: 4, date: '2026-01-08', weight: 83.8 },
+            { id: 5, date: '2026-01-05', weight: 84.0 },
+            { id: 6, date: '2026-01-01', weight: 84.5 },
+        ].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
     });
 
     const [isDarkMode, setIsDarkMode] = useState(() => {
         const saved = localStorage.getItem('darkMode');
         return saved === 'true';
     });
+
+    const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
 
     const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
     const [newWeight, setNewWeight] = useState('');
@@ -56,7 +60,7 @@ export default function WeightTracker() {
     }, [entries]);
 
     useEffect(() => {
-        localStorage.setItem('darkMode', isDarkMode);
+        localStorage.setItem('darkMode', String(isDarkMode));
         if (isDarkMode) {
             document.documentElement.classList.add('dark');
         } else {
@@ -113,9 +117,10 @@ export default function WeightTracker() {
         if (newDate && newWeight) {
             const weightNum = parseFloat(newWeight);
             if (!isNaN(weightNum)) {
-                const newEntry = { date: newDate, weight: weightNum };
-                setEntries(prev => {
-                    const updated = [...prev, newEntry].sort((a, b) =>
+                // Generate a simple unique ID
+                const newEntry = { id: Date.now(), date: newDate, weight: weightNum };
+                setEntries((prev: any[]) => {
+                    const updated = [...prev, newEntry].sort((a: any, b: any) =>
                         new Date(b.date).getTime() - new Date(a.date).getTime()
                     );
                     return updated;
@@ -125,8 +130,8 @@ export default function WeightTracker() {
         }
     };
 
-    const deleteEntry = (index) => {
-        setEntries(entries.filter((_, i) => i !== index));
+    const deleteEntry = (id: any) => {
+        setEntries(entries.filter((entry: any) => entry.id !== id));
     };
 
     const currentWeight = entries.length > 0 ? entries[0].weight : 0;
@@ -185,8 +190,8 @@ export default function WeightTracker() {
                                 <div key={i} className="flex-1 flex flex-col justify-end">
                                     <div
                                         className={`w-full rounded-sm transition-all duration-300 ${isToday
-                                                ? 'bg-blue-500' // Today: Primary Blue
-                                                : isDarkMode ? 'bg-gray-700' : 'bg-gray-300' // Past: Light Neutral (Visible)
+                                            ? 'bg-blue-500' // Today: Primary Blue
+                                            : isDarkMode ? 'bg-gray-700' : 'bg-gray-300' // Past: Light Neutral (Visible)
                                             }`}
                                         style={{ height: `${heightPct}%` }}
                                     ></div>
@@ -200,8 +205,8 @@ export default function WeightTracker() {
                         {entries.length > 1 && (
                             <>
                                 <span className={`font-semibold ${(entries[0].weight - entries[1].weight) <= 0
-                                        ? 'text-emerald-500'
-                                        : 'text-red-500'
+                                    ? 'text-emerald-500'
+                                    : 'text-red-500'
                                     }`}>
                                     {(entries[0].weight - entries[1].weight) <= 0 ? '↓' : '↑'} {Math.abs(entries[0].weight - entries[1].weight).toFixed(1)} kg
                                 </span>
@@ -355,48 +360,72 @@ export default function WeightTracker() {
 
                 {/* History */}
                 <div className="space-y-4">
-                    <div className="flex justify-between items-center px-2">
+                    <div
+                        className="flex justify-between items-center px-2 py-2 -mx-2 cursor-pointer rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                        onClick={() => entries.length > 3 && setIsHistoryExpanded(!isHistoryExpanded)}
+                    >
                         <h2 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>History</h2>
-                        <button className="text-blue-500 font-semibold text-sm">See All</button>
+                        {entries.length > 3 && (
+                            <div className="flex items-center gap-1 text-blue-500 font-semibold text-sm">
+                                <span>{isHistoryExpanded ? 'Show less' : 'Show more'}</span>
+                                {isHistoryExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            </div>
+                        )}
                     </div>
 
-                    {entries.map((entry, index) => {
-                        const dateObj = new Date(entry.date);
-                        const day = dateObj.getUTCDate();
-                        const month = dateObj.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' }).toUpperCase();
+                    <div className="relative space-y-4 transition-all duration-300 ease-out">
+                        {(isHistoryExpanded ? entries : entries.slice(0, 3)).map((entry, index) => {
+                            const dateObj = new Date(entry.date);
+                            const day = dateObj.getUTCDate();
+                            const month = dateObj.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' }).toUpperCase();
 
-                        const prevWeight = index < entries.length - 1 ? entries[index + 1].weight : null;
-                        const change = prevWeight ? (entry.weight - prevWeight).toFixed(1) : null;
-                        const isGain = change > 0;
+                            // Find the actual index of this entry in the full 'entries' array
+                            // This is important for deleteEntry to work correctly when history is collapsed
+                            const originalIndex = entries.findIndex(e => e.id === entry.id); // Assuming 'id' is unique
 
-                        return (
-                            <div key={index} className={`rounded-2xl p-4 flex items-center justify-between shadow-sm transition-colors ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                                <div className="flex items-center gap-4">
-                                    <div className={`rounded-xl w-14 h-14 flex flex-col items-center justify-center ${isDarkMode ? 'bg-gray-700 text-gray-400' : 'bg-[#F3F5F7] text-gray-600'}`}>
-                                        <span className="text-[10px] font-bold tracking-wider">{month}</span>
-                                        <span className={`text-lg font-bold leading-none ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{day}</span>
+                            const prevWeight = index < entries.length - 1 ? entries[index + 1].weight : null;
+                            const weightDiff = prevWeight ? (entry.weight - prevWeight) : 0;
+                            const changeStr = prevWeight ? Math.abs(weightDiff).toFixed(1) : null;
+                            const isGain = weightDiff > 0;
+
+                            return (
+                                <div key={entry.id} className={`rounded-2xl p-4 flex items-center justify-between shadow-sm transition-colors ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                                    <div className="flex items-center gap-4">
+                                        <div className={`rounded-xl w-14 h-14 flex flex-col items-center justify-center ${isDarkMode ? 'bg-gray-700 text-gray-400' : 'bg-[#F3F5F7] text-gray-600'}`}>
+                                            <span className="text-[10px] font-bold tracking-wider">{month}</span>
+                                            <span className={`text-lg font-bold leading-none ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{day}</span>
+                                        </div>
+                                        <div>
+                                            <p className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{entry.weight} kg</p>
+                                            <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>{prevWeight ? 'Recorded' : 'Initial weight'}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{entry.weight} kg</p>
-                                        <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>{prevWeight ? 'Recorded' : 'Initial weight'}</p>
+                                    <div className="flex items-center gap-4">
+                                        {changeStr && (
+                                            <span className={`text-sm font-bold ${isGain ? 'text-red-400' : 'text-green-400'}`}>
+                                                {isGain ? '+' : '-'}{changeStr}kg
+                                            </span>
+                                        )}
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                deleteEntry(originalIndex); // Use originalIndex for deletion
+                                            }}
+                                            className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${isDarkMode ? 'text-red-400 hover:bg-red-900/30' : 'text-red-300 hover:text-red-500 hover:bg-red-50'}`}
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-4">
-                                    {change && (
-                                        <span className={`text-sm font-bold ${isGain ? 'text-red-400' : 'text-green-400'}`}>
-                                            {isGain ? '+' : ''}{change}kg
-                                        </span>
-                                    )}
-                                    <button
-                                        onClick={() => deleteEntry(index)}
-                                        className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${isDarkMode ? 'text-red-400 hover:bg-red-900/30' : 'text-red-300 hover:text-red-500 hover:bg-red-50'}`}
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
-                            </div>
-                        );
-                    })}
+                            );
+                        })}
+
+                        {/* Fade Mask (Only in collapsed state and if more entries exist) */}
+                        {!isHistoryExpanded && entries.length > 3 && (
+                            <div className={`absolute bottom-0 left-0 right-0 h-24 pointer-events-none bg-gradient-to-t ${isDarkMode ? 'from-gray-900' : 'from-[#F5F7FA]'
+                                } to-transparent rounded-b-[2rem] rounded-t-none`} />
+                        )}
+                    </div>
                 </div>
             </main>
 

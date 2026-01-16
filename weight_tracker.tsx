@@ -118,7 +118,7 @@ export default function WeightTracker() {
                                 <span className={`${isDarkMode ? 'text-gray-500' : 'text-gray-400'} font-medium`}>kg</span>
                             </div>
                         </div>
-                        <div className="flex items-center gap-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-3 py-1 rounded-full text-sm font-bold">
+                        <div className="flex items-center gap-1 bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 px-3 py-1 rounded-full text-sm font-bold transition-colors duration-200">
                             <TrendingDown size={14} />
                             <span>-0.5kg</span>
                         </div>
@@ -134,8 +134,8 @@ export default function WeightTracker() {
                                 <div key={i} className="flex-1 flex flex-col justify-end gap-1 group">
                                     <div
                                         className={`w-full rounded-t-lg transition-all duration-500 ${isSelected
-                                                ? 'bg-blue-500'
-                                                : isDarkMode ? 'bg-gray-700' : 'bg-blue-100'
+                                            ? 'bg-blue-500'
+                                            : isDarkMode ? 'bg-gray-700' : 'bg-blue-100'
                                             }`}
                                         style={{ height: `${height}%` }}
                                     ></div>

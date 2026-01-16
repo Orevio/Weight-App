@@ -366,8 +366,8 @@ export default function WeightTracker() {
                                     />
                                 </div>
                                 <div className={`flex items-center px-4 rounded-xl transition-all duration-200 border-2 ${weightError
-                                        ? 'bg-[#FFF5F5] border-red-200'
-                                        : isDarkMode ? 'bg-gray-700 border-transparent' : 'bg-[#F8F9FB] border-transparent'
+                                        ? (isDarkMode ? 'bg-red-900/20 border-red-500/50' : 'bg-[#FFF5F5] border-red-200')
+                                        : (isDarkMode ? 'bg-gray-700 border-transparent' : 'bg-[#F8F9FB] border-transparent')
                                     }`}>
                                     <Scale size={20} className={weightError ? "text-red-400" : "text-gray-400"} />
                                     <input

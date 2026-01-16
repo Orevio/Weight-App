@@ -110,38 +110,55 @@ export default function WeightTracker() {
             <main className="px-5 space-y-5">
                 {/* Current Weight Card */}
                 <div className={`rounded-[2rem] p-6 shadow-sm transition-colors ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                    <div className="flex justify-between items-start mb-6">
-                        <div>
-                            <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mb-1`}>Current Weight</p>
-                            <div className="flex items-baseline gap-1">
-                                <span className={`text-4xl font-extrabold ${isDarkMode ? 'text-white' : 'text-[#0B1C33]'}`}>{currentWeight}</span>
-                                <span className={`${isDarkMode ? 'text-gray-500' : 'text-gray-400'} font-medium`}>kg</span>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-1 bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400 px-3 py-1 rounded-full text-sm font-bold transition-colors duration-200">
-                            <TrendingDown size={14} />
-                            <span>-0.5kg</span>
+                    {/* Header: Title & Weight */}
+                    <div className="mb-6">
+                        <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mb-1 text-sm font-medium`}>Current Weight</p>
+                        <div className="flex items-baseline gap-1">
+                            <span className={`text-4xl font-extrabold ${isDarkMode ? 'text-white' : 'text-[#0B1C33]'}`}>{currentWeight}</span>
+                            <span className={`${isDarkMode ? 'text-gray-500' : 'text-gray-400'} font-medium`}>kg</span>
                         </div>
                     </div>
 
-                    {/* Bar Chart */}
-                    <div className="flex items-end justify-between h-24 gap-2">
+                    {/* Mini Chart - 7 bars max, no axes, labels or interaction */}
+                    <div className="flex items-end justify-between h-14 mb-4 gap-2">
                         {chartData.map((entry, i) => {
-                            const isSelected = i === chartData.length - 1;
-                            const height = Math.min(Math.max(((entry.weight - 80) / 5) * 100, 20), 100);
+                            const isToday = i === chartData.length - 1;
+                            // Calculate simple relative height based on min/max of the visible set
+                            const allWeights = chartData.map(d => d.weight);
+                            const minW = Math.min(...allWeights);
+                            const maxW = Math.max(...allWeights);
+                            const range = maxW - minW || 1; // avoid divide by zero
+                            // Scale height between 20% and 100%
+                            const heightPct = 20 + ((entry.weight - minW) / range) * 80;
 
                             return (
-                                <div key={i} className="flex-1 flex flex-col justify-end gap-1 group">
+                                <div key={i} className="flex-1 flex flex-col justify-end">
                                     <div
-                                        className={`w-full rounded-t-lg transition-all duration-500 ${isSelected
-                                            ? 'bg-blue-500'
-                                            : isDarkMode ? 'bg-gray-700' : 'bg-blue-100'
+                                        className={`w-full rounded-sm transition-all duration-300 ${isToday
+                                                ? 'bg-blue-500' // Today: Primary Blue
+                                                : isDarkMode ? 'bg-gray-700' : 'bg-gray-200' // Past: Light Neutral
                                             }`}
-                                        style={{ height: `${height}%` }}
+                                        style={{ height: `${heightPct}%` }}
                                     ></div>
                                 </div>
                             );
                         })}
+                    </div>
+
+                    {/* Context Footer */}
+                    <div className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        {entries.length > 1 && (
+                            <>
+                                <span className={`font-semibold ${(entries[0].weight - entries[1].weight) <= 0
+                                        ? 'text-emerald-500'
+                                        : 'text-red-500'
+                                    }`}>
+                                    {(entries[0].weight - entries[1].weight) <= 0 ? '↓' : '↑'} {Math.abs(entries[0].weight - entries[1].weight).toFixed(1)} kg
+                                </span>
+                                <span>since last entry · {new Date(entries[1].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                            </>
+                        )}
+                        {entries.length === 1 && <span>First entry recorded</span>}
                     </div>
                 </div>
 

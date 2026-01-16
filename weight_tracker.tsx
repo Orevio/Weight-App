@@ -49,6 +49,8 @@ export default function WeightTracker() {
 
     const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
     const [newWeight, setNewWeight] = useState('');
+    const [weightError, setWeightError] = useState(false);
+    const weightInputRef = React.useRef<HTMLInputElement>(null);
 
     // Goals State
     const [goals, setGoals] = useState(() => {
@@ -121,20 +123,28 @@ export default function WeightTracker() {
     };
 
     const addEntry = () => {
-        if (newDate && newWeight) {
-            const weightNum = parseFloat(newWeight);
-            if (!isNaN(weightNum)) {
-                // Generate a simple unique ID
-                const newEntry = { id: Date.now(), date: newDate, weight: weightNum };
-                setEntries((prev: any[]) => {
-                    const updated = [...prev, newEntry].sort((a: any, b: any) =>
-                        new Date(b.date).getTime() - new Date(a.date).getTime()
-                    );
-                    return updated;
-                });
-                setNewWeight('');
+        const weightNum = parseFloat(newWeight);
+
+        // Validation: Empty or Invalid (<= 0)
+        if (!newWeight || isNaN(weightNum) || weightNum <= 0) {
+            setWeightError(true);
+            // Focus the input
+            if (weightInputRef.current) {
+                weightInputRef.current.focus();
             }
+            return;
         }
+
+        // Proceed if valid
+        const newEntry = { id: Date.now(), date: newDate, weight: weightNum };
+        setEntries((prev: any[]) => {
+            const updated = [...prev, newEntry].sort((a: any, b: any) =>
+                new Date(b.date).getTime() - new Date(a.date).getTime()
+            );
+            return updated;
+        });
+        setNewWeight('');
+        setWeightError(false);
     };
 
     const deleteEntry = (id: any) => {
@@ -355,17 +365,30 @@ export default function WeightTracker() {
                                         className={`w-full bg-transparent border-none py-4 px-3 focus:ring-0 outline-none font-medium ${isDarkMode ? 'text-white [color-scheme:dark]' : 'text-gray-700'}`}
                                     />
                                 </div>
-                                <div className={`flex items-center px-4 rounded-xl ${isDarkMode ? 'bg-gray-700' : 'bg-[#F8F9FB]'}`}>
-                                    <Scale size={20} className="text-gray-400" />
+                                <div className={`flex items-center px-4 rounded-xl transition-all duration-200 border-2 ${weightError
+                                        ? 'bg-[#FFF5F5] border-red-200'
+                                        : isDarkMode ? 'bg-gray-700 border-transparent' : 'bg-[#F8F9FB] border-transparent'
+                                    }`}>
+                                    <Scale size={20} className={weightError ? "text-red-400" : "text-gray-400"} />
                                     <input
+                                        ref={weightInputRef}
                                         type="number"
                                         step="0.1"
                                         placeholder="Weight (kg)"
                                         value={newWeight}
-                                        onChange={(e) => setNewWeight(e.target.value)}
-                                        className={`w-full bg-transparent border-none py-4 px-3 focus:ring-0 outline-none font-medium ${isDarkMode ? 'text-white placeholder-gray-500' : 'text-gray-700'}`}
+                                        onChange={(e) => {
+                                            setNewWeight(e.target.value);
+                                            if (weightError) setWeightError(false);
+                                        }}
+                                        className={`w-full bg-transparent border-none py-4 px-3 focus:ring-0 outline-none font-medium ${isDarkMode ? 'text-white placeholder-gray-500' : 'text-gray-700'
+                                            }`}
                                     />
                                 </div>
+                                {weightError && (
+                                    <p className="text-xs text-red-500 font-medium px-2 animate-in fade-in slide-in-from-top-1">
+                                        Please enter your weight first
+                                    </p>
+                                )}
                                 <button
                                     onClick={addEntry}
                                     className="w-full bg-[#3B82F6] text-white font-bold py-4 rounded-xl hover:bg-blue-600 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30"

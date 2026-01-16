@@ -120,7 +120,7 @@ export default function WeightTracker() {
                     </div>
 
                     {/* Mini Chart - 7 bars max, no axes, labels or interaction */}
-                    <div className="flex items-end justify-between h-14 mb-4 gap-2">
+                    <div className="flex justify-between h-14 mb-4 gap-2">
                         {chartData.map((entry, i) => {
                             const isToday = i === chartData.length - 1;
                             // Calculate simple relative height based on min/max of the visible set
@@ -135,8 +135,8 @@ export default function WeightTracker() {
                                 <div key={i} className="flex-1 flex flex-col justify-end">
                                     <div
                                         className={`w-full rounded-sm transition-all duration-300 ${isToday
-                                                ? 'bg-blue-500' // Today: Primary Blue
-                                                : isDarkMode ? 'bg-gray-700' : 'bg-gray-200' // Past: Light Neutral
+                                            ? 'bg-blue-500' // Today: Primary Blue
+                                            : isDarkMode ? 'bg-gray-700' : 'bg-gray-200' // Past: Light Neutral
                                             }`}
                                         style={{ height: `${heightPct}%` }}
                                     ></div>
@@ -150,8 +150,8 @@ export default function WeightTracker() {
                         {entries.length > 1 && (
                             <>
                                 <span className={`font-semibold ${(entries[0].weight - entries[1].weight) <= 0
-                                        ? 'text-emerald-500'
-                                        : 'text-red-500'
+                                    ? 'text-emerald-500'
+                                    : 'text-red-500'
                                     }`}>
                                     {(entries[0].weight - entries[1].weight) <= 0 ? '↓' : '↑'} {Math.abs(entries[0].weight - entries[1].weight).toFixed(1)} kg
                                 </span>

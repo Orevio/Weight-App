@@ -39,6 +39,7 @@ export default function WeightTracker() {
     });
 
     const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
+    const [deletingIds, setDeletingIds] = useState<number[]>([]);
 
     const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
     const [newWeight, setNewWeight] = useState('');
@@ -131,7 +132,14 @@ export default function WeightTracker() {
     };
 
     const deleteEntry = (id: any) => {
-        setEntries(entries.filter((entry: any) => entry.id !== id));
+        // 1. Mark as deleting (trigger animation)
+        setDeletingIds(prev => [...prev, id]);
+
+        // 2. Wait for animation (0.7s), then remove data
+        setTimeout(() => {
+            setEntries(prevEntries => prevEntries.filter((entry: any) => entry.id !== id));
+            setDeletingIds(prev => prev.filter(dId => dId !== id));
+        }, 700);
     };
 
     const currentWeight = entries.length > 0 ? entries[0].weight : 0;
@@ -385,8 +393,15 @@ export default function WeightTracker() {
                             const changeStr = prevWeight ? Math.abs(weightDiff).toFixed(1) : null;
                             const isGain = weightDiff > 0;
 
+                            const isDeleting = deletingIds.includes(entry.id);
+
                             return (
-                                <div key={entry.id} className={`rounded-2xl p-4 flex items-center justify-between shadow-sm transition-colors ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                                <div
+                                    key={entry.id}
+                                    className={`rounded-2xl p-4 flex items-center justify-between shadow-sm transition-all duration-700 ease-out transform ${isDarkMode ? 'bg-gray-800' : 'bg-white'
+                                        } ${isDeleting ? 'opacity-0 translate-x-12 scale-95' : 'opacity-100 translate-x-0 scale-100'
+                                        }`}
+                                >
                                     <div className="flex items-center gap-4">
                                         <div className={`rounded-xl w-14 h-14 flex flex-col items-center justify-center ${isDarkMode ? 'bg-gray-700 text-gray-400' : 'bg-[#F3F5F7] text-gray-600'}`}>
                                             <span className="text-[10px] font-bold tracking-wider">{month}</span>

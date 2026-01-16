@@ -221,8 +221,8 @@ export default function WeightTracker() {
                         const circumference = 2 * Math.PI * radius;
                         const strokeDashoffset = circumference - (progress / 100) * circumference;
 
-                        // Hierarchy handled via Visual Weight, NOT layout size
-                        const strokeWidth = isPrimary ? 8 : 5;
+                        // Hierarchy: Ring thickness + Opacity + Font Weight
+                        const strokeWidth = isPrimary ? 8 : 4;
 
                         // Time Context
                         const timeContext = getTimeContext(goal, index);
@@ -251,10 +251,11 @@ export default function WeightTracker() {
                                             strokeDasharray={circumference}
                                             strokeDashoffset={strokeDashoffset}
                                             strokeLinecap="round"
-                                            className={!isPrimary ? 'opacity-80 saturate-50' : ''}
+                                            className={!isPrimary ? 'opacity-50 saturate-50' : ''}
                                         />
                                     </svg>
-                                    <span className={`absolute font-bold ${isPrimary ? 'text-2xl' : 'text-xl'} ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                    {/* Hierarchy: Font Weight. Same size text, different weight. */}
+                                    <span className={`absolute text-2xl ${isPrimary ? 'font-extrabold' : 'font-semibold'} ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                                         {Math.round(progress)}%
                                     </span>
                                 </div>
@@ -269,10 +270,10 @@ export default function WeightTracker() {
                                 <h3 className={`font-bold text-xs tracking-wider mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{goal.label}</h3>
                                 <p className={`font-bold mb-1 ${isPrimary ? 'text-2xl' : 'text-xl'} ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{goal.target}kg</p>
 
-                                {/* Edit Action */}
+                                {/* Edit Action - Quiet, large hit area */}
                                 <button
                                     onClick={() => handleEditGoal(goal)}
-                                    className={`flex items-center gap-1 text-xs ${isDarkMode ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'} transition-colors`}
+                                    className={`flex items-center gap-1 text-xs p-2 -m-2 opacity-50 hover:opacity-100 transition-opacity ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}
                                 >
                                     <span>by {goal.formattedDate}</span>
                                     <Pencil size={10} />

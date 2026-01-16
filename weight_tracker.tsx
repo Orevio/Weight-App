@@ -361,7 +361,7 @@ export default function WeightTracker() {
                 {/* History */}
                 <div className="space-y-4">
                     <div
-                        className="flex justify-between items-center px-2 py-2 -mx-2 cursor-pointer rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                        className="flex justify-between items-center px-2 py-2 -mx-2 cursor-pointer transition-colors"
                         onClick={() => entries.length > 3 && setIsHistoryExpanded(!isHistoryExpanded)}
                     >
                         <h2 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>History</h2>

@@ -423,7 +423,7 @@ export default function WeightTracker() {
                         {/* Fade Mask (Only in collapsed state and if more entries exist) */}
                         {!isHistoryExpanded && entries.length > 3 && (
                             <div className={`absolute bottom-0 left-0 right-0 h-24 pointer-events-none bg-gradient-to-t ${isDarkMode ? 'from-gray-900' : 'from-[#F5F7FA]'
-                                } to-transparent rounded-b-[2rem] rounded-t-none`} />
+                                } to-transparent`} />
                         )}
                     </div>
                 </div>

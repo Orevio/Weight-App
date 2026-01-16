@@ -379,10 +379,7 @@ export default function WeightTracker() {
                             const day = dateObj.getUTCDate();
                             const month = dateObj.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' }).toUpperCase();
 
-                            // Find the actual index of this entry in the full 'entries' array
-                            // This is important for deleteEntry to work correctly when history is collapsed
-                            const originalIndex = entries.findIndex(e => e.id === entry.id); // Assuming 'id' is unique
-
+                            // Calculate logic for display
                             const prevWeight = index < entries.length - 1 ? entries[index + 1].weight : null;
                             const weightDiff = prevWeight ? (entry.weight - prevWeight) : 0;
                             const changeStr = prevWeight ? Math.abs(weightDiff).toFixed(1) : null;
@@ -409,7 +406,7 @@ export default function WeightTracker() {
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                deleteEntry(originalIndex); // Use originalIndex for deletion
+                                                deleteEntry(entry.id);
                                             }}
                                             className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${isDarkMode ? 'text-red-400 hover:bg-red-900/30' : 'text-red-300 hover:text-red-500 hover:bg-red-50'}`}
                                         >

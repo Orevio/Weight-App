@@ -217,23 +217,21 @@ export default function WeightTracker() {
                     {goals.map((goal, index) => {
                         const isPrimary = index === 0;
                         const progress = calculateProgress(84.1, currentWeight, goal.target);
-                        // Hierarchy: Goal 1 (Primary) vs Goal 2 (Secondary)
-                        // Goal 1: Larger, thicker stroke, opacity 100
-                        // Goal 2: Smaller, thinner stroke, opacity 90, desaturated
                         const radius = 30;
                         const circumference = 2 * Math.PI * radius;
                         const strokeDashoffset = circumference - (progress / 100) * circumference;
 
-                        const strokeWidth = isPrimary ? 10 : 6;
+                        // Hierarchy handled via Visual Weight, NOT layout size
+                        const strokeWidth = isPrimary ? 8 : 5;
 
                         // Time Context
                         const timeContext = getTimeContext(goal, index);
 
                         return (
-                            <div key={index} className={`relative flex-1 rounded-[2rem] flex flex-col items-center justify-center shadow-sm transition-all duration-300 ${isDarkMode ? 'bg-gray-800' : 'bg-white'
-                                } ${isPrimary ? 'py-8' : 'py-5 opacity-90'}`}>
-
-                                <div className="relative w-24 h-24 mb-4 flex items-center justify-center">
+                            <div key={index} className={`relative flex-1 rounded-[2rem] p-6 flex flex-col items-center justify-center shadow-sm transition-all duration-300 ${isDarkMode ? 'bg-gray-800' : 'bg-white'
+                                }`}>
+                                {/* Ring Section */}
+                                <div className="relative w-24 h-24 mb-2 flex items-center justify-center">
                                     <svg className="w-full h-full transform -rotate-90">
                                         <circle
                                             cx="48"
@@ -253,25 +251,28 @@ export default function WeightTracker() {
                                             strokeDasharray={circumference}
                                             strokeDashoffset={strokeDashoffset}
                                             strokeLinecap="round"
-                                            className={`${!isPrimary && 'opacity-80 saturate-50'}`}
+                                            className={!isPrimary ? 'opacity-80 saturate-50' : ''}
                                         />
                                     </svg>
-                                    <div className="absolute flex flex-col items-center">
-                                        <span className={`font-bold ${isPrimary ? 'text-xl' : 'text-lg'} ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{Math.round(progress)}%</span>
-                                        {/* Time Context Line */}
-                                        <span className={`text-[10px] font-medium mt-0.5 ${isPrimary ? (isDarkMode ? 'text-blue-400/80' : 'text-blue-500/80') : 'text-gray-400'
-                                            }`}>
-                                            {timeContext}
-                                        </span>
-                                    </div>
+                                    <span className={`absolute font-bold ${isPrimary ? 'text-2xl' : 'text-xl'} ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                        {Math.round(progress)}%
+                                    </span>
                                 </div>
+
+                                {/* Days Left (Below Ring) */}
+                                <span className={`text-[10px] font-medium mb-4 ${isPrimary ? 'text-blue-500' : 'text-gray-400'
+                                    }`}>
+                                    {timeContext}
+                                </span>
+
+                                {/* Goal Details */}
                                 <h3 className={`font-bold text-xs tracking-wider mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{goal.label}</h3>
-                                <div className="flex items-center gap-1">
-                                    <p className={`font-bold ${isPrimary ? 'text-2xl' : 'text-xl'} ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{goal.target}kg</p>
-                                </div>
+                                <p className={`font-bold mb-1 ${isPrimary ? 'text-2xl' : 'text-xl'} ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{goal.target}kg</p>
+
+                                {/* Edit Action */}
                                 <button
                                     onClick={() => handleEditGoal(goal)}
-                                    className={`flex items-center gap-1 text-xs mt-1 ${isDarkMode ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'} transition-colors`}
+                                    className={`flex items-center gap-1 text-xs ${isDarkMode ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'} transition-colors`}
                                 >
                                     <span>by {goal.formattedDate}</span>
                                     <Pencil size={10} />

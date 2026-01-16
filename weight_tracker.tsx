@@ -46,6 +46,41 @@ export default function WeightTracker() {
 
     // Tab State: 'weight' | 'exercise' | 'standup' | 'habits'
     const [activeTab, setActiveTab] = useState('weight');
+    const tabs = ['weight', 'exercise', 'standup', 'habits'];
+
+    // Swipe Navigation State
+    const [touchStart, setTouchStart] = useState<number | null>(null);
+    const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+    // Swipe Handlers
+    const handleTouchStart = (e: React.TouchEvent) => {
+        setTouchEnd(null);
+        setTouchStart(e.targetTouches[0].clientX);
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        setTouchEnd(e.targetTouches[0].clientX);
+    };
+
+    const handleTouchEnd = () => {
+        if (!touchStart || !touchEnd) return;
+
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > 50;
+        const isRightSwipe = distance < -50;
+
+        if (Math.abs(distance) < 50) return; // Threshold check
+
+        const currentIndex = tabs.indexOf(activeTab);
+
+        if (isLeftSwipe && currentIndex < tabs.length - 1) {
+            setActiveTab(tabs[currentIndex + 1]);
+        }
+
+        if (isRightSwipe && currentIndex > 0) {
+            setActiveTab(tabs[currentIndex - 1]);
+        }
+    };
 
     const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
     const [newWeight, setNewWeight] = useState('');
@@ -188,7 +223,12 @@ export default function WeightTracker() {
                 </button>
             </header>
 
-            <main className="px-5 space-y-5 pb-8">
+            <main
+                className="px-5 space-y-5 pb-8 min-h-[80vh]"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+            >
                 {activeTab === 'weight' && (
                     <>
                         {/* Current Weight Card */}
@@ -366,8 +406,8 @@ export default function WeightTracker() {
                                     />
                                 </div>
                                 <div className={`flex items-center px-4 rounded-xl transition-all duration-200 border-2 ${weightError
-                                        ? (isDarkMode ? 'bg-red-900/20 border-red-500/50' : 'bg-[#FFF5F5] border-red-200')
-                                        : (isDarkMode ? 'bg-gray-700 border-transparent' : 'bg-[#F8F9FB] border-transparent')
+                                    ? (isDarkMode ? 'bg-red-900/20 border-red-500/50' : 'bg-[#FFF5F5] border-red-200')
+                                    : (isDarkMode ? 'bg-gray-700 border-transparent' : 'bg-[#F8F9FB] border-transparent')
                                     }`}>
                                     <Scale size={20} className={weightError ? "text-red-400" : "text-gray-400"} />
                                     <input

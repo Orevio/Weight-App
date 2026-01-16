@@ -50,36 +50,50 @@ export default function WeightTracker() {
 
     // Swipe Navigation State
     const [touchStart, setTouchStart] = useState<number | null>(null);
-    const [touchEnd, setTouchEnd] = useState<number | null>(null);
+    const [dragOffset, setDragOffset] = useState(0);
+    const [isDragging, setIsDragging] = useState(false);
 
     // Swipe Handlers
     const handleTouchStart = (e: React.TouchEvent) => {
-        setTouchEnd(null);
+        setIsDragging(true);
         setTouchStart(e.targetTouches[0].clientX);
     };
 
     const handleTouchMove = (e: React.TouchEvent) => {
-        setTouchEnd(e.targetTouches[0].clientX);
+        if (!touchStart) return;
+        const currentX = e.targetTouches[0].clientX;
+        const diff = currentX - touchStart;
+
+        // Resistance at edges
+        const currentIndex = tabs.indexOf(activeTab);
+        const isFirst = currentIndex === 0 && diff > 0;
+        const isLast = currentIndex === tabs.length - 1 && diff < 0;
+
+        if (isFirst || isLast) {
+            setDragOffset(diff * 0.4); // Rubber banding
+        } else {
+            setDragOffset(diff);
+        }
     };
 
     const handleTouchEnd = () => {
-        if (!touchStart || !touchEnd) return;
-
-        const distance = touchStart - touchEnd;
-        const isLeftSwipe = distance > 50;
-        const isRightSwipe = distance < -50;
-
-        if (Math.abs(distance) < 50) return; // Threshold check
-
+        setIsDragging(false);
         const currentIndex = tabs.indexOf(activeTab);
+        const threshold = window.innerWidth * 0.25; // 25% width threshold
 
-        if (isLeftSwipe && currentIndex < tabs.length - 1) {
-            setActiveTab(tabs[currentIndex + 1]);
+        if (Math.abs(dragOffset) > threshold) {
+            if (dragOffset > 0 && currentIndex > 0) {
+                // Swipe Right -> Prev
+                setActiveTab(tabs[currentIndex - 1]);
+            } else if (dragOffset < 0 && currentIndex < tabs.length - 1) {
+                // Swipe Left -> Next
+                setActiveTab(tabs[currentIndex + 1]);
+            }
         }
 
-        if (isRightSwipe && currentIndex > 0) {
-            setActiveTab(tabs[currentIndex - 1]);
-        }
+        // Reset offset (will animate back to 0 due to CSS transition)
+        setTouchStart(null);
+        setDragOffset(0);
     };
 
     const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
@@ -224,13 +238,21 @@ export default function WeightTracker() {
             </header>
 
             <main
-                className="px-5 space-y-5 pb-8 min-h-[80vh]"
+                className="overflow-hidden min-h-[80vh] relative"
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
             >
-                {activeTab === 'weight' && (
-                    <>
+                <div
+                    className="flex w-[400%] h-full"
+                    style={{
+                        transform: `translateX(calc(-${tabs.indexOf(activeTab) * 25}% + ${dragOffset}px))`,
+                        transition: isDragging ? 'none' : 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                    }}
+                >
+                    {/* Weight Tab Content */}
+                    <div className="w-[25%] px-5 space-y-5 pb-8">
+
                         {/* Current Weight Card */}
                         <div className={`rounded-[2rem] p-6 shadow-sm transition-colors ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
                             {/* Header: Title & Weight */}
@@ -512,16 +534,25 @@ export default function WeightTracker() {
                                 )}
                             </div>
                         </div>
-                    </>
-                )}
 
-                {activeTab !== 'weight' && (
-                    <div className="flex flex-col items-center justify-center py-20 opacity-50">
-                        <p className={`text-lg font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                            {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} tracking coming soon
-                        </p>
+
                     </div>
-                )}
+
+                    {/* Placeholder Tabs */}
+                    {['Exercise', 'Stand-up', 'Habits'].map((tabName) => (
+                        <div key={tabName} className="w-[25%] px-5 flex flex-col items-center justify-center opacity-50 space-y-4">
+                            <div className={`p-6 rounded-full ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                                {tabName === 'Exercise' && <Dumbbell size={48} className={isDarkMode ? 'text-gray-600' : 'text-gray-400'} />}
+                                {tabName === 'Stand-up' && <Mic size={48} className={isDarkMode ? 'text-gray-600' : 'text-gray-400'} />}
+                                {tabName === 'Habits' && <CheckCircle size={48} className={isDarkMode ? 'text-gray-600' : 'text-gray-400'} />}
+                            </div>
+                            <p className={`text-xl font-bold ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                                {tabName} Tracking
+                            </p>
+                            <p className={`text-sm ${isDarkMode ? 'text-gray-700' : 'text-gray-500'}`}>Coming Soon</p>
+                        </div>
+                    ))}
+                </div>
             </main>
 
             {/* Bottom Navigation */}

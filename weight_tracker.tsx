@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Plus,
     Trash2,
     TrendingDown,
     TrendingUp,
     Moon,
+    Sun,
     Calendar,
     LayoutGrid,
     LineChart,
@@ -14,23 +15,48 @@ import {
 } from 'lucide-react';
 
 export default function WeightTracker() {
-    const [entries, setEntries] = useState([
-        { date: '2026-01-14', weight: 83.1 },
-        { date: '2026-01-12', weight: 83.6 },
-        { date: '2026-01-10', weight: 83.1 },
-        { date: '2026-01-08', weight: 83.8 },
-        { date: '2026-01-05', weight: 84.0 },
-        { date: '2026-01-01', weight: 84.5 },
-    ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    // 1. Initialize State from LocalStorage
+    const [entries, setEntries] = useState(() => {
+        const saved = localStorage.getItem('weightEntries');
+        if (saved) return JSON.parse(saved);
+        return [
+            { date: '2026-01-14', weight: 83.1 },
+            { date: '2026-01-12', weight: 83.6 },
+            { date: '2026-01-10', weight: 83.1 },
+            { date: '2026-01-08', weight: 83.8 },
+            { date: '2026-01-05', weight: 84.0 },
+            { date: '2026-01-01', weight: 84.5 },
+        ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    });
 
-    // Sort logic meant latest first for history display
+    const [isDarkMode, setIsDarkMode] = useState(() => {
+        const saved = localStorage.getItem('darkMode');
+        return saved === 'true';
+    });
 
-    const [newDate, setNewDate] = useState('2026-01-14');
+    const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
     const [newWeight, setNewWeight] = useState('');
 
-    const goals = [
-        { id: 1, target: 80, label: 'GOAL 1', date: 'Feb 11' },
-        { id: 2, target: 77, label: 'GOAL 2', date: 'Mar 22' }
+    // 2. Persist Entries
+    useEffect(() => {
+        localStorage.setItem('weightEntries', JSON.stringify(entries));
+    }, [entries]);
+
+    // 3. Handle Dark Mode
+    useEffect(() => {
+        localStorage.setItem('darkMode', isDarkMode);
+        if (isDarkMode) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    }, [isDarkMode]);
+
+    const toggleTheme = () => setIsDarkMode(!isDarkMode);
+
+    let goals = [
+        { id: 1, target: 80, label: 'GOAL 1', date: 'Feb 11', color: '#3B82F6' }, // Blue
+        { id: 2, target: 77, label: 'GOAL 2', date: 'Mar 22', color: '#10B981' }  // Green
     ];
 
     const addEntry = () => {
@@ -38,9 +64,12 @@ export default function WeightTracker() {
             const weightNum = parseFloat(newWeight);
             if (!isNaN(weightNum)) {
                 const newEntry = { date: newDate, weight: weightNum };
-                setEntries(prev => [...prev, newEntry].sort((a, b) =>
-                    new Date(b.date).getTime() - new Date(a.date).getTime()
-                ));
+                setEntries(prev => {
+                    const updated = [...prev, newEntry].sort((a, b) =>
+                        new Date(b.date).getTime() - new Date(a.date).getTime()
+                    );
+                    return updated;
+                });
                 setNewWeight('');
             }
         }
@@ -51,7 +80,6 @@ export default function WeightTracker() {
     };
 
     const currentWeight = entries.length > 0 ? entries[0].weight : 0;
-    const initialWeight = entries.length > 0 ? entries[entries.length - 1].weight : 83.1;
 
     // Calculate progress for circular indicators
     const calculateProgress = (start, current, target) => {
@@ -61,50 +89,54 @@ export default function WeightTracker() {
         return Math.min(Math.max(progress, 0), 100);
     };
 
-    // Mock data for bar chart - last 7 entries reversed for chart (oldest to newest)
     const chartData = [...entries].slice(0, 7).reverse();
 
     return (
-        <div className="min-h-screen bg-[#F5F7FA] font-sans pb-24 text-gray-800">
+        <div className={`min-h-screen font-sans pb-24 transition-colors duration-300 ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-[#F5F7FA] text-gray-800'}`}>
             {/* Header */}
             <header className="px-6 pt-8 pb-4 flex justify-between items-start">
                 <div>
-                    <p className="text-gray-500 text-sm font-medium mb-1">Good morning, Alex</p>
-                    <h1 className="text-3xl font-bold text-gray-900">Weight Tracker</h1>
+                    <p className={`text-sm font-medium mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Good morning, Alex</p>
+                    <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Weight Tracker</h1>
                 </div>
-                <button className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors">
-                    <Moon size={20} className="text-gray-600" />
+                <button
+                    onClick={toggleTheme}
+                    className={`p-2 rounded-full transition-colors ${isDarkMode ? 'bg-gray-800 text-yellow-400 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                >
+                    {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
                 </button>
             </header>
 
             <main className="px-5 space-y-5">
                 {/* Current Weight Card */}
-                <div className="bg-white rounded-[2rem] p-6 shadow-sm">
+                <div className={`rounded-[2rem] p-6 shadow-sm transition-colors ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
                     <div className="flex justify-between items-start mb-6">
                         <div>
-                            <p className="text-gray-500 mb-1">Current Weight</p>
+                            <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mb-1`}>Current Weight</p>
                             <div className="flex items-baseline gap-1">
-                                <span className="text-4xl font-extrabold text-[#0B1C33]">{currentWeight}</span>
-                                <span className="text-gray-400 font-medium">kg</span>
+                                <span className={`text-4xl font-extrabold ${isDarkMode ? 'text-white' : 'text-[#0B1C33]'}`}>{currentWeight}</span>
+                                <span className={`${isDarkMode ? 'text-gray-500' : 'text-gray-400'} font-medium`}>kg</span>
                             </div>
                         </div>
-                        <div className="flex items-center gap-1 bg-green-100 text-green-600 px-3 py-1 rounded-full text-sm font-bold">
+                        <div className="flex items-center gap-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-3 py-1 rounded-full text-sm font-bold">
                             <TrendingDown size={14} />
                             <span>-0.5kg</span>
                         </div>
                     </div>
 
-                    {/* Simple CSS Bar Chart */}
+                    {/* Bar Chart */}
                     <div className="flex items-end justify-between h-24 gap-2">
                         {chartData.map((entry, i) => {
                             const isSelected = i === chartData.length - 1;
-                            // Normalize height between 20% and 100% based on range 80-85 for visual demo
                             const height = Math.min(Math.max(((entry.weight - 80) / 5) * 100, 20), 100);
 
                             return (
                                 <div key={i} className="flex-1 flex flex-col justify-end gap-1 group">
                                     <div
-                                        className={`w-full rounded-t-lg transition-all duration-500 ${isSelected ? 'bg-blue-500' : 'bg-blue-100'}`}
+                                        className={`w-full rounded-t-lg transition-all duration-500 ${isSelected
+                                                ? 'bg-blue-500'
+                                                : isDarkMode ? 'bg-gray-700' : 'bg-blue-100'
+                                            }`}
                                         style={{ height: `${height}%` }}
                                     ></div>
                                 </div>
@@ -117,20 +149,19 @@ export default function WeightTracker() {
                 <div className="grid grid-cols-2 gap-4">
                     {goals.map((goal, index) => {
                         const progress = calculateProgress(84.1, currentWeight, goal.target);
-                        const radius = 30; // 30px radius
+                        const radius = 30;
                         const circumference = 2 * Math.PI * radius;
                         const strokeDashoffset = circumference - (progress / 100) * circumference;
 
                         return (
-                            <div key={index} className="bg-white rounded-[2rem] p-5 flex flex-col items-center justify-center shadow-sm">
+                            <div key={index} className={`rounded-[2rem] p-5 flex flex-col items-center justify-center shadow-sm transition-colors ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
                                 <div className="relative w-24 h-24 mb-3 flex items-center justify-center">
-                                    {/* Background Circle */}
                                     <svg className="w-full h-full transform -rotate-90">
                                         <circle
                                             cx="48"
                                             cy="48"
                                             r={radius}
-                                            stroke="#F3F4F6"
+                                            stroke={isDarkMode ? '#374151' : '#F3F4F6'}
                                             strokeWidth="8"
                                             fill="transparent"
                                         />
@@ -138,7 +169,7 @@ export default function WeightTracker() {
                                             cx="48"
                                             cy="48"
                                             r={radius}
-                                            stroke="#3B82F6"
+                                            stroke={goal.color}
                                             strokeWidth="8"
                                             fill="transparent"
                                             strokeDasharray={circumference}
@@ -146,30 +177,30 @@ export default function WeightTracker() {
                                             strokeLinecap="round"
                                         />
                                     </svg>
-                                    <span className="absolute text-sm font-bold">{Math.round(progress)}%</span>
+                                    <span className={`absolute text-sm font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{Math.round(progress)}%</span>
                                 </div>
-                                <h3 className="text-gray-600 font-bold text-xs tracking-wider mb-1">{goal.label}</h3>
-                                <p className="text-xl font-bold text-gray-900 mb-1">{goal.target}kg</p>
-                                <p className="text-xs text-gray-400">by {goal.date}</p>
+                                <h3 className={`font-bold text-xs tracking-wider mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{goal.label}</h3>
+                                <p className={`text-xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{goal.target}kg</p>
+                                <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>by {goal.date}</p>
                             </div>
                         );
                     })}
                 </div>
 
                 {/* Add New Entry */}
-                <div className="bg-white rounded-[2rem] p-6 shadow-sm">
-                    <h2 className="text-lg font-bold text-gray-900 mb-4">Add New Entry</h2>
+                <div className={`rounded-[2rem] p-6 shadow-sm transition-colors ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                    <h2 className={`text-lg font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Add New Entry</h2>
                     <div className="space-y-4">
-                        <div className="bg-[#F8F9FB] flex items-center px-4 rounded-xl">
+                        <div className={`flex items-center px-4 rounded-xl ${isDarkMode ? 'bg-gray-700' : 'bg-[#F8F9FB]'}`}>
                             <Calendar size={20} className="text-gray-400" />
                             <input
                                 type="date"
                                 value={newDate}
                                 onChange={(e) => setNewDate(e.target.value)}
-                                className="w-full bg-transparent border-none py-4 px-3 text-gray-700 focus:ring-0 outline-none font-medium"
+                                className={`w-full bg-transparent border-none py-4 px-3 focus:ring-0 outline-none font-medium ${isDarkMode ? 'text-white [color-scheme:dark]' : 'text-gray-700'}`}
                             />
                         </div>
-                        <div className="bg-[#F8F9FB] flex items-center px-4 rounded-xl">
+                        <div className={`flex items-center px-4 rounded-xl ${isDarkMode ? 'bg-gray-700' : 'bg-[#F8F9FB]'}`}>
                             <Scale size={20} className="text-gray-400" />
                             <input
                                 type="number"
@@ -177,12 +208,12 @@ export default function WeightTracker() {
                                 placeholder="Weight (kg)"
                                 value={newWeight}
                                 onChange={(e) => setNewWeight(e.target.value)}
-                                className="w-full bg-transparent border-none py-4 px-3 text-gray-700 focus:ring-0 outline-none font-medium"
+                                className={`w-full bg-transparent border-none py-4 px-3 focus:ring-0 outline-none font-medium ${isDarkMode ? 'text-white placeholder-gray-500' : 'text-gray-700'}`}
                             />
                         </div>
                         <button
                             onClick={addEntry}
-                            className="w-full bg-[#3B82F6] text-white font-bold py-4 rounded-xl hover:bg-blue-600 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-200"
+                            className="w-full bg-[#3B82F6] text-white font-bold py-4 rounded-xl hover:bg-blue-600 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30"
                         >
                             <Plus size={20} />
                             Add Log Entry
@@ -193,7 +224,7 @@ export default function WeightTracker() {
                 {/* History */}
                 <div className="space-y-4">
                     <div className="flex justify-between items-center px-2">
-                        <h2 className="text-lg font-bold text-gray-900">History</h2>
+                        <h2 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>History</h2>
                         <button className="text-blue-500 font-semibold text-sm">See All</button>
                     </div>
 
@@ -207,15 +238,15 @@ export default function WeightTracker() {
                         const isGain = change > 0;
 
                         return (
-                            <div key={index} className="bg-white rounded-2xl p-4 flex items-center justify-between shadow-sm">
+                            <div key={index} className={`rounded-2xl p-4 flex items-center justify-between shadow-sm transition-colors ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
                                 <div className="flex items-center gap-4">
-                                    <div className="bg-[#F3F5F7] rounded-xl w-14 h-14 flex flex-col items-center justify-center text-gray-600">
+                                    <div className={`rounded-xl w-14 h-14 flex flex-col items-center justify-center ${isDarkMode ? 'bg-gray-700 text-gray-400' : 'bg-[#F3F5F7] text-gray-600'}`}>
                                         <span className="text-[10px] font-bold tracking-wider">{month}</span>
-                                        <span className="text-lg font-bold text-gray-900 leading-none">{day}</span>
+                                        <span className={`text-lg font-bold leading-none ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{day}</span>
                                     </div>
                                     <div>
-                                        <p className="text-lg font-bold text-gray-900">{entry.weight} kg</p>
-                                        <p className="text-xs text-gray-400">{prevWeight ? 'Recorded' : 'Initial weight'}</p>
+                                        <p className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{entry.weight} kg</p>
+                                        <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>{prevWeight ? 'Recorded' : 'Initial weight'}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4">
@@ -226,7 +257,7 @@ export default function WeightTracker() {
                                     )}
                                     <button
                                         onClick={() => deleteEntry(index)}
-                                        className="w-8 h-8 flex items-center justify-center text-red-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                                        className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${isDarkMode ? 'text-red-400 hover:bg-red-900/30' : 'text-red-300 hover:text-red-500 hover:bg-red-50'}`}
                                     >
                                         <Trash2 size={16} />
                                     </button>
@@ -238,20 +269,20 @@ export default function WeightTracker() {
             </main>
 
             {/* Bottom Navigation */}
-            <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-8 py-4 flex justify-between items-center pb-8 z-10">
-                <button className="flex flex-col items-center gap-1 text-blue-600">
+            <nav className={`fixed bottom-0 left-0 right-0 border-t px-8 py-4 flex justify-between items-center pb-8 z-10 transition-colors ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+                <button className="flex flex-col items-center gap-1 text-blue-500">
                     <LayoutGrid size={24} />
                     <span className="text-[10px] font-bold">Dashboard</span>
                 </button>
-                <button className="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-600">
+                <button className={`flex flex-col items-center gap-1 hover:text-gray-600 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                     <LineChart size={24} />
                     <span className="text-[10px] font-medium">Insights</span>
                 </button>
-                <button className="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-600">
+                <button className={`flex flex-col items-center gap-1 hover:text-gray-600 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                     <Target size={24} />
                     <span className="text-[10px] font-medium">Goals</span>
                 </button>
-                <button className="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-600">
+                <button className={`flex flex-col items-center gap-1 hover:text-gray-600 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                     <User size={24} />
                     <span className="text-[10px] font-medium">Profile</span>
                 </button>

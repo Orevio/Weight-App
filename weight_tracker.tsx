@@ -11,7 +11,9 @@ import {
     LineChart,
     Target,
     User,
-    Scale
+    Scale,
+    Pencil,
+    X
 } from 'lucide-react';
 
 export default function WeightTracker() {
@@ -37,12 +39,22 @@ export default function WeightTracker() {
     const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
     const [newWeight, setNewWeight] = useState('');
 
-    // 2. Persist Entries
+    // Goals State
+    const [goals, setGoals] = useState(() => {
+        const saved = localStorage.getItem('goals');
+        return saved ? JSON.parse(saved) : [
+            { id: 1, target: 80, label: 'GOAL 1', date: '2026-02-11', formattedDate: 'Feb 11', color: '#3B82F6' },
+            { id: 2, target: 77, label: 'GOAL 2', date: '2026-03-22', formattedDate: 'Mar 22', color: '#10B981' }
+        ];
+    });
+
+    const [editingGoal, setEditingGoal] = useState(null);
+    const [editDateValue, setEditDateValue] = useState('');
+
     useEffect(() => {
         localStorage.setItem('weightEntries', JSON.stringify(entries));
     }, [entries]);
 
-    // 3. Handle Dark Mode
     useEffect(() => {
         localStorage.setItem('darkMode', isDarkMode);
         if (isDarkMode) {
@@ -52,12 +64,50 @@ export default function WeightTracker() {
         }
     }, [isDarkMode]);
 
+    useEffect(() => {
+        localStorage.setItem('goals', JSON.stringify(goals));
+    }, [goals]);
+
     const toggleTheme = () => setIsDarkMode(!isDarkMode);
 
-    let goals = [
-        { id: 1, target: 80, label: 'GOAL 1', date: 'Feb 11', color: '#3B82F6' }, // Blue
-        { id: 2, target: 77, label: 'GOAL 2', date: 'Mar 22', color: '#10B981' }  // Green
-    ];
+    const handleEditGoal = (goal) => {
+        setEditingGoal(goal);
+        setEditDateValue(goal.date); // Assuming date is stored as YYYY-MM-DD
+    };
+
+    const saveGoalDate = () => {
+        if (editingGoal && editDateValue) {
+            setGoals(prev => prev.map(g => {
+                if (g.id === editingGoal.id) {
+                    const dateObj = new Date(editDateValue);
+                    const formattedDetails = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    return { ...g, date: editDateValue, formattedDate: formattedDetails };
+                }
+                return g;
+            }));
+            setEditingGoal(null);
+        }
+    };
+
+    const calculateDaysLeft = (targetDateStr) => {
+        const target = new Date(targetDateStr);
+        const today = new Date();
+        const diffTime = target - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays;
+    };
+
+    const getTimeContext = (goal, index) => {
+        const days = calculateDaysLeft(goal.date);
+        if (index === 0) {
+            if (days <= 0) return "Due now";
+            return `${days} days left`;
+        } else {
+            if (days > 60) return "Later"; // approx 2 months
+            if (days > 30) return "~1 month away";
+            return `${days} days away`;
+        }
+    };
 
     const addEntry = () => {
         if (newDate && newWeight) {
@@ -135,8 +185,8 @@ export default function WeightTracker() {
                                 <div key={i} className="flex-1 flex flex-col justify-end">
                                     <div
                                         className={`w-full rounded-sm transition-all duration-300 ${isToday
-                                            ? 'bg-blue-500' // Today: Primary Blue
-                                            : isDarkMode ? 'bg-gray-700' : 'bg-gray-200' // Past: Light Neutral
+                                                ? 'bg-blue-500' // Today: Primary Blue
+                                                : isDarkMode ? 'bg-gray-700' : 'bg-gray-300' // Past: Light Neutral (Visible)
                                             }`}
                                         style={{ height: `${heightPct}%` }}
                                     ></div>
@@ -150,8 +200,8 @@ export default function WeightTracker() {
                         {entries.length > 1 && (
                             <>
                                 <span className={`font-semibold ${(entries[0].weight - entries[1].weight) <= 0
-                                    ? 'text-emerald-500'
-                                    : 'text-red-500'
+                                        ? 'text-emerald-500'
+                                        : 'text-red-500'
                                     }`}>
                                     {(entries[0].weight - entries[1].weight) <= 0 ? '↓' : '↑'} {Math.abs(entries[0].weight - entries[1].weight).toFixed(1)} kg
                                 </span>
@@ -163,23 +213,34 @@ export default function WeightTracker() {
                 </div>
 
                 {/* Goals Grid */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="flex gap-4 items-start">
                     {goals.map((goal, index) => {
+                        const isPrimary = index === 0;
                         const progress = calculateProgress(84.1, currentWeight, goal.target);
+                        // Hierarchy: Goal 1 (Primary) vs Goal 2 (Secondary)
+                        // Goal 1: Larger, thicker stroke, opacity 100
+                        // Goal 2: Smaller, thinner stroke, opacity 90, desaturated
                         const radius = 30;
                         const circumference = 2 * Math.PI * radius;
                         const strokeDashoffset = circumference - (progress / 100) * circumference;
 
+                        const strokeWidth = isPrimary ? 10 : 6;
+
+                        // Time Context
+                        const timeContext = getTimeContext(goal, index);
+
                         return (
-                            <div key={index} className={`rounded-[2rem] p-5 flex flex-col items-center justify-center shadow-sm transition-colors ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                                <div className="relative w-24 h-24 mb-3 flex items-center justify-center">
+                            <div key={index} className={`relative flex-1 rounded-[2rem] flex flex-col items-center justify-center shadow-sm transition-all duration-300 ${isDarkMode ? 'bg-gray-800' : 'bg-white'
+                                } ${isPrimary ? 'py-8' : 'py-5 opacity-90'}`}>
+
+                                <div className="relative w-24 h-24 mb-4 flex items-center justify-center">
                                     <svg className="w-full h-full transform -rotate-90">
                                         <circle
                                             cx="48"
                                             cy="48"
                                             r={radius}
                                             stroke={isDarkMode ? '#374151' : '#F3F4F6'}
-                                            strokeWidth="8"
+                                            strokeWidth={strokeWidth}
                                             fill="transparent"
                                         />
                                         <circle
@@ -187,22 +248,74 @@ export default function WeightTracker() {
                                             cy="48"
                                             r={radius}
                                             stroke={goal.color}
-                                            strokeWidth="8"
+                                            strokeWidth={strokeWidth}
                                             fill="transparent"
                                             strokeDasharray={circumference}
                                             strokeDashoffset={strokeDashoffset}
                                             strokeLinecap="round"
+                                            className={`${!isPrimary && 'opacity-80 saturate-50'}`}
                                         />
                                     </svg>
-                                    <span className={`absolute text-sm font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{Math.round(progress)}%</span>
+                                    <div className="absolute flex flex-col items-center">
+                                        <span className={`font-bold ${isPrimary ? 'text-xl' : 'text-lg'} ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{Math.round(progress)}%</span>
+                                        {/* Time Context Line */}
+                                        <span className={`text-[10px] font-medium mt-0.5 ${isPrimary ? (isDarkMode ? 'text-blue-400/80' : 'text-blue-500/80') : 'text-gray-400'
+                                            }`}>
+                                            {timeContext}
+                                        </span>
+                                    </div>
                                 </div>
                                 <h3 className={`font-bold text-xs tracking-wider mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{goal.label}</h3>
-                                <p className={`text-xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{goal.target}kg</p>
-                                <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>by {goal.date}</p>
+                                <div className="flex items-center gap-1">
+                                    <p className={`font-bold ${isPrimary ? 'text-2xl' : 'text-xl'} ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{goal.target}kg</p>
+                                </div>
+                                <button
+                                    onClick={() => handleEditGoal(goal)}
+                                    className={`flex items-center gap-1 text-xs mt-1 ${isDarkMode ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'} transition-colors`}
+                                >
+                                    <span>by {goal.formattedDate}</span>
+                                    <Pencil size={10} />
+                                </button>
                             </div>
                         );
                     })}
                 </div>
+
+                {/* Edit Goal Modal */}
+                {editingGoal && (
+                    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
+                        <div className={`w-full max-w-sm rounded-[2rem] p-6 shadow-xl ${isDarkMode ? 'bg-gray-800' : 'bg-white'} animate-in slide-in-from-bottom duration-300`}>
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Edit {editingGoal.label} Date</h3>
+                                <button onClick={() => setEditingGoal(null)} className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    <X size={20} className={isDarkMode ? 'text-gray-400' : 'text-gray-500'} />
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Target Date</label>
+                                    <div className={`flex items-center px-4 rounded-xl ${isDarkMode ? 'bg-gray-700' : 'bg-[#F8F9FB]'}`}>
+                                        <Calendar size={20} className="text-gray-400" />
+                                        <input
+                                            type="date"
+                                            value={editDateValue}
+                                            onChange={(e) => setEditDateValue(e.target.value)}
+                                            className={`w-full bg-transparent border-none py-4 px-3 focus:ring-0 outline-none font-medium ${isDarkMode ? 'text-white [color-scheme:dark]' : 'text-gray-700'}`}
+                                        />
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={saveGoalDate}
+                                    className="w-full bg-[#3B82F6] text-white font-bold py-4 rounded-xl hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/30"
+                                >
+                                    Update Date
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Add New Entry */}
                 <div className={`rounded-[2rem] p-6 shadow-sm transition-colors ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>

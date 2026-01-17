@@ -711,7 +711,7 @@ export default function WeightTracker() {
 
                                         {/* External Add Goal Action */}
                                         {activeGoals.length < 4 && (
-                                            <div className={`flex flex-col items-start mt-6 ml-1 ${activeGoals.length > 0 ? 'opacity-85' : ''}`}>
+                                            <div className={`flex flex-col items-start mt-5 ml-1 ${activeGoals.length > 0 ? 'opacity-85' : ''}`}>
                                                 <button
                                                     onClick={() => handleAddNewGoal()}
                                                     className={`flex items-center gap-2 py-2 pr-4 rounded-xl transition-all active:scale-95 ${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}

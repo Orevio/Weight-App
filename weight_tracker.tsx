@@ -324,7 +324,7 @@ export default function WeightTracker() {
                                     return (
                                         <div className="flex flex-col gap-3">
                                             {/* Journey Track Container */}
-                                            <div className="relative h-1.5 w-full bg-[#E5E7EB] dark:bg-gray-700 rounded-full flex items-center">
+                                            <div className="relative h-1.5 w-full bg-[#F3F4F6] dark:bg-gray-800 rounded-full flex items-center mt-3 mb-1">
 
                                                 {/* Blue Progress Fill */}
                                                 <div
@@ -332,13 +332,7 @@ export default function WeightTracker() {
                                                     style={{ width: `${progressPct}%` }}
                                                 ></div>
 
-                                                {/* Current Position Indicator (The "You are here" Pill) */}
-                                                <div
-                                                    className="absolute h-2.5 w-1 bg-blue-500 rounded-full shadow-sm z-20 transform -translate-x-1/2 transition-all duration-700 ease-out"
-                                                    style={{ left: `${progressPct}%` }}
-                                                ></div>
-
-                                                {/* Goal Markers */}
+                                                {/* Goal Markers (Layer 2) */}
                                                 {goals.map((goal, idx) => {
                                                     // Calculate relative position
                                                     const goalDist = startWeight - goal.target;
@@ -348,14 +342,20 @@ export default function WeightTracker() {
                                                     return (
                                                         <div
                                                             key={goal.id}
-                                                            className={`absolute w-2.5 h-2.5 rounded-full border-2 transform -translate-x-1/2 z-10 transition-colors duration-300 ${isPassed
-                                                                    ? 'bg-blue-500 border-blue-500'
-                                                                    : 'bg-[#E5E7EB] dark:bg-gray-700 border-white dark:border-gray-800'
+                                                            className={`absolute w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 transform -translate-x-1/2 z-20 transition-colors duration-300 shadow-sm ${isPassed
+                                                                    ? 'bg-blue-500' // Completed: Blue 
+                                                                    : 'bg-gray-400 dark:bg-gray-500' // Future: Visible Mid-Gray
                                                                 }`}
                                                             style={{ left: `${goalPct}%` }}
                                                         ></div>
                                                     );
                                                 })}
+
+                                                {/* Current Position Indicator (Layer 3 - Top) */}
+                                                <div
+                                                    className="absolute h-4 w-1.5 bg-blue-600 rounded-full shadow-md z-30 transform -translate-x-1/2 transition-all duration-700 ease-out border border-white dark:border-gray-800"
+                                                    style={{ left: `${progressPct}%` }}
+                                                ></div>
                                             </div>
 
                                             {/* Simple Text Support */}

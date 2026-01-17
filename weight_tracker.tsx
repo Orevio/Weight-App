@@ -552,7 +552,7 @@ export default function WeightTracker() {
                                         onClick={() => setDeletionTargetId(null)} // Click outside to exit edit
                                     >
                                         <div
-                                            className={`w-full flex items-center ${activeGoals.length > 1 ? 'overflow-x-auto snap-x snap-mandatory gap-4 px-4 py-8 -my-4' : ''} no-scrollbar`}
+                                            className={`w-full flex items-center ${activeGoals.length > 1 ? 'overflow-x-auto snap-x snap-mandatory gap-4 px-4 py-8 -my-4 touch-pan-x' : ''} no-scrollbar`}
                                             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                                             onScroll={(e) => {
                                                 // Exit edit mode on scroll
@@ -951,8 +951,8 @@ export default function WeightTracker() {
                                 <div>
                                     <label className={`block text-xs font-bold uppercase tracking-wider mb-3 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Target Date</label>
                                     <div className={`relative flex items-center px-6 py-4 rounded-2xl transition-all border-2 ${!isValidDate && editDateValue
-                                            ? (isDarkMode ? 'bg-red-900/10 border-red-500/50' : 'bg-red-50 border-red-200')
-                                            : (isDarkMode ? 'bg-gray-700 border-transparent' : 'bg-gray-50 border-transparent')
+                                        ? (isDarkMode ? 'bg-red-900/10 border-red-500/50' : 'bg-red-50 border-red-200')
+                                        : (isDarkMode ? 'bg-gray-700 border-transparent' : 'bg-gray-50 border-transparent')
                                         }`}>
                                         <input
                                             type="date"
@@ -960,8 +960,8 @@ export default function WeightTracker() {
                                             value={editDateValue}
                                             onChange={(e) => setEditDateValue(e.target.value)}
                                             className={`w-full bg-transparent border-none p-0 focus:ring-0 outline-none font-bold text-xl ${!isValidDate && editDateValue
-                                                    ? 'text-red-500'
-                                                    : (isDarkMode ? 'text-white [color-scheme:dark]' : 'text-gray-900')
+                                                ? 'text-red-500'
+                                                : (isDarkMode ? 'text-white [color-scheme:dark]' : 'text-gray-900')
                                                 }`}
                                         />
                                     </div>
@@ -984,8 +984,8 @@ export default function WeightTracker() {
                                     onClick={saveGoal}
                                     disabled={!isValidDate}
                                     className={`w-full font-bold py-4 rounded-xl transition-all shadow-lg ${isValidDate
-                                            ? 'bg-[#3B82F6] text-white hover:bg-blue-600 shadow-blue-500/30'
-                                            : 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none dark:bg-gray-700 dark:text-gray-500'
+                                        ? 'bg-[#3B82F6] text-white hover:bg-blue-600 shadow-blue-500/30'
+                                        : 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none dark:bg-gray-700 dark:text-gray-500'
                                         }`}
                                 >
                                     Save changes

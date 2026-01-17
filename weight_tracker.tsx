@@ -290,49 +290,66 @@ export default function WeightTracker() {
                                 })}
                             </div>
 
-                            {/* Context Footer with Deviation Bar */}
+                            {/* Context Footer: Expected Range Indicator */}
                             <div className="mt-6">
                                 {entries.length > 1 && (() => {
                                     const current = entries[0].weight;
                                     const prev = entries[1].weight;
                                     const diff = current - prev;
-                                    const isOffTrack = diff > 0.5; // Threshold
 
-                                    // Bar Logic
-                                    // scale: max deviation ±2kg maps to full width of half-bar?
-                                    // Let's say max range is ±3kg for visual balance
+                                    // Status Logic
+                                    // "Off track" if gained more than 0.5kg
+                                    const isOffTrack = diff > 0.5;
+                                    const isSignificantlyOff = diff > 2.0;
+
+                                    // Color Logic
+                                    // Blue if on track (<= 0.5 gain), Amber if off (> 0.5), Red if severe (> 2.0)
+                                    let indicatorColor = 'bg-blue-500';
+                                    if (isSignificantlyOff) indicatorColor = 'bg-[#EF4444]'; // Soft Red
+                                    else if (isOffTrack) indicatorColor = 'bg-[#F59E0B]'; // Muted Amber
+
+                                    // Position Logic
+                                    // Map deviation to % position. Center (0 deviation) is 50%.
+                                    // Range is ±3kg. 
+                                    // -3kg (Loss) -> 0% (Left)
+                                    // +3kg (Gain) -> 100% (Right)
+                                    // This follows a standard number line (Lower weight left, Higher right)
                                     const maxRange = 3;
-                                    const widthPct = Math.min((Math.abs(diff) / maxRange) * 50, 50); // Max 50% width
+                                    const positionPct = 50 + ((diff / maxRange) * 50);
+                                    const clampedPos = Math.min(Math.max(positionPct, 0), 100);
 
                                     return (
-                                        <div className="flex flex-col gap-2">
-                                            {/* Deviation Bar Track */}
-                                            <div className="relative h-2 bg-gray-100 dark:bg-gray-700 rounded-full w-full overflow-hidden flex items-center justify-center">
-                                                {/* Center Marker */}
-                                                <div className="absolute w-[2px] h-full bg-gray-300 dark:bg-gray-600 z-10"></div>
+                                        <div className="flex flex-col gap-3">
+                                            {/* Bar Container */}
+                                            <div className="relative h-2 w-full bg-[#E6E8EC] dark:bg-gray-700 rounded-full flex items-center">
+                                                {/* Expected Range Segment (Centered, ~40%) */}
+                                                <div className="absolute left-1/2 -translate-x-1/2 w-[40%] h-full bg-[#D1D5DB] dark:bg-gray-600 rounded-full"></div>
 
-                                                {/* The Bar */}
+                                                {/* Current Position Indicator (The Star) */}
                                                 <div
-                                                    className={`h-full rounded-full transition-all duration-500 absolute
-                                                        ${diff > 0 ? 'right-1/2 bg-amber-500/80' : 'left-1/2 bg-blue-500'}
-                                                    `}
-                                                    style={{ width: `${widthPct}%` }}
+                                                    className={`absolute w-1 h-3.5 rounded-[2px] shadow-sm transform -translate-x-1/2 transition-all duration-500 ease-out z-10 ${indicatorColor}`}
+                                                    style={{ left: `${clampedPos}%` }}
                                                 ></div>
                                             </div>
 
                                             {/* Text Context */}
-                                            <div className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                            <div className="flex items-center gap-2 text-sm">
                                                 <span className={`font-semibold ${diff <= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                                                     {diff <= 0 ? '↓' : '↑'} {Math.abs(diff).toFixed(1)} kg
                                                 </span>
-                                                <span>
-                                                    · {isOffTrack ? 'off track' : 'on track'} since {new Date(entries[1].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                <span className={`${isOffTrack ? 'text-amber-600 dark:text-amber-500' : 'text-gray-500 dark:text-gray-400'}`}>
+                                                    · {isOffTrack ? 'Above expected range' : 'On track today'}
                                                 </span>
                                             </div>
                                         </div>
                                     );
                                 })()}
-                                {entries.length === 1 && <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>First entry recorded</span>}
+                                {entries.length === 1 && (
+                                    <div className="flex flex-col gap-3 mt-6">
+                                        <div className="relative h-2 w-full bg-[#E6E8EC] dark:bg-gray-700 rounded-full"></div>
+                                        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Log more entries to see your expected range</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 

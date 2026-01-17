@@ -148,21 +148,40 @@ export default function WeightTracker() {
 
     const saveGoal = () => {
         if (editingGoal && editDateValue && editWeightValue) {
-            setGoals(prev => prev.map(g => {
-                if (g.id === editingGoal.id) {
-                    const dateObj = new Date(editDateValue);
-                    const formattedDetails = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    return {
-                        ...g,
-                        date: editDateValue,
-                        formattedDate: formattedDetails,
-                        target: parseFloat(editWeightValue)
-                    };
+            setGoals(prev => {
+                const existingIndex = prev.findIndex(g => g.id === editingGoal.id);
+                const dateObj = new Date(editDateValue);
+                const formattedDetails = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const updated = {
+                    ...editingGoal,
+                    date: editDateValue,
+                    formattedDate: formattedDetails,
+                    target: parseFloat(editWeightValue)
+                };
+
+                if (existingIndex >= 0) {
+                    const newGoals = [...prev];
+                    newGoals[existingIndex] = updated;
+                    return newGoals;
                 }
-                return g;
-            }));
+                return [...prev, updated];
+            });
             setEditingGoal(null);
+            setEditDateValue('');
+            setEditWeightValue('');
         }
+    };
+
+    const handleAddNewGoal = () => {
+        const newGoal = {
+            id: Date.now(),
+            target: currentWeight - 5,
+            label: `GOAL ${goals.length + 1}`,
+            date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            formattedDate: 'Next Month',
+            color: '#3B82F6'
+        };
+        handleEditGoal(newGoal);
     };
 
     const removeGoal = (id) => {
@@ -636,20 +655,43 @@ export default function WeightTracker() {
                                                         <h3 className={`font-bold text-xs tracking-wider mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{goal.label}</h3>
                                                         <p className={`font-bold mb-1 ${isPrimary ? 'text-2xl' : 'text-xl'} ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{goal.target}kg</p>
 
-                                                        {/* Edit Action */}
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                if (!isSelected) handleEditGoal(goal);
-                                                            }}
-                                                            className={`flex items-center gap-1 text-xs p-2 -m-2 opacity-50 hover:opacity-100 transition-opacity ${isDarkMode ? 'text-gray-500' : 'text-gray-400'} ${isSelected ? 'invisible' : ''}`}
-                                                        >
-                                                            <span>by {goal.formattedDate}</span>
-                                                            <Pencil size={10} />
-                                                        </button>
                                                     </div>
                                                 );
                                             })}
+
+                                            {/* Inline Add Goal Card / Limit Reached Card */}
+                                            {(() => {
+                                                const isLimitReached = activeGoals.length >= 4;
+                                                const widthClass = 'min-w-[85%] snap-center';
+
+                                                return (
+                                                    <div
+                                                        className={`relative ${widthClass} rounded-[2rem] p-6 flex flex-col items-center justify-center 
+                                                            border-2 border-dashed ${isDarkMode ? 'border-gray-700 bg-gray-800/50' : 'border-gray-200 bg-gray-50'}
+                                                            transition-all duration-200 
+                                                            ${isLimitReached ? 'opacity-60 cursor-not-allowed' : 'active:scale-95 cursor-pointer'}
+                                                            ${deletionTargetId !== null ? 'opacity-50 blur-[1px]' : ''}
+                                                        `}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (deletionTargetId !== null) return; // Don't trigger if editing
+                                                            if (!isLimitReached) handleAddNewGoal();
+                                                        }}
+                                                    >
+                                                        <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-3 
+                                                            ${isLimitReached ? 'bg-gray-200 dark:bg-gray-700 text-gray-400' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-500'}
+                                                        `}>
+                                                            {isLimitReached ? <Target size={24} /> : <Plus size={24} strokeWidth={2.5} />}
+                                                        </div>
+                                                        <h3 className={`font-semibold text-sm mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                                            {isLimitReached ? 'Goal limit reached' : 'Add new goal'}
+                                                        </h3>
+                                                        <p className="text-xs text-center text-gray-500 px-4">
+                                                            {isLimitReached ? 'Complete a goal to add another' : 'Up to 4 goals'}
+                                                        </p>
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
 
                                         {/* Carousel Indicators */}

@@ -363,97 +363,103 @@ export default function WeightTracker() {
 
                         {/* Goals Grid */}
                         <div className="flex gap-4 items-start">
-                            {goals.map((goal, index) => {
-                                const isCompleted = currentWeight <= goal.target && currentWeight > 0;
+                            {(() => {
+                                // Filter Logic: Active vs Completed
+                                const activeGoals = goals.filter(g => currentWeight > g.target).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-                                // Logic: Goal 2 is primary if Goal 1 is completed
-                                const isGoal1Completed = currentWeight <= goals[0].target && currentWeight > 0;
-                                const isPrimary = index === 0 ? !isCompleted : (index === 1 && isGoal1Completed);
-
-                                // Progress Calculation
-                                const progress = calculateProgress(84.1, currentWeight, goal.target);
-                                const radius = 30;
-                                const circumference = 2 * Math.PI * radius;
-                                const strokeDashoffset = isCompleted
-                                    ? 0 // Full ring
-                                    : circumference - (progress / 100) * circumference;
-
-                                // Hierarchy: Ring thickness + Opacity + Font Weight
-                                // Completed: Thicker (+1px). primary: 8px. secondary: 4px.
-                                const strokeWidth = isCompleted ? 9 : (isPrimary ? 8 : 4);
-
-                                // Time Context
-                                const timeContext = isCompleted
-                                    ? 'Goal achieved'
-                                    : getTimeContext(goal, index);
-
-                                return (
-                                    <div key={index} className={`relative flex-1 rounded-[2rem] p-6 flex flex-col items-center justify-center shadow-sm transition-all duration-500 ${isDarkMode ? 'bg-gray-800' : 'bg-white'
-                                        }`}>
-                                        {/* Ring Section */}
-                                        <div className="relative w-24 h-24 mb-2 flex items-center justify-center">
-                                            <svg className="w-full h-full transform -rotate-90">
-                                                <circle
-                                                    cx="48"
-                                                    cy="48"
-                                                    r={radius}
-                                                    stroke={isDarkMode ? '#374151' : '#F3F4F6'}
-                                                    strokeWidth={strokeWidth}
-                                                    fill="transparent"
-                                                />
-                                                <circle
-                                                    cx="48"
-                                                    cy="48"
-                                                    r={radius}
-                                                    stroke={goal.color}
-                                                    strokeWidth={strokeWidth}
-                                                    fill="transparent"
-                                                    strokeDasharray={circumference}
-                                                    strokeDashoffset={strokeDashoffset}
-                                                    strokeLinecap="round"
-                                                    className={`transition-all duration-700 ease-out ${!isPrimary && !isCompleted ? 'opacity-50 saturate-50' : ''}`}
-                                                />
-                                            </svg>
-
-                                            {/* Completed: Check Icon. In Progress: % Text */}
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                {isCompleted ? (
-                                                    <CheckCircle
-                                                        size={32}
-                                                        className={`text-blue-500 animate-in zoom-in duration-300`}
-                                                        strokeWidth={3}
-                                                    />
-                                                ) : (
-                                                    <span className={`text-2xl transition-all duration-300 ${isPrimary ? 'font-extrabold' : 'font-semibold'} ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                                        {Math.round(progress)}%
-                                                    </span>
-                                                )}
+                                // Empty State
+                                if (activeGoals.length === 0) {
+                                    return (
+                                        <div className={`flex-1 rounded-[2rem] p-6 flex flex-col items-center justify-center shadow-sm transition-all duration-300 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                                            <div className="w-20 h-20 mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                                                <Target size={32} className="text-gray-400" />
                                             </div>
-                                        </div>
-
-                                        {/* Status Label (Below Ring) */}
-                                        <span className={`text-[10px] font-medium mb-4 transition-colors duration-300 ${isCompleted ? 'text-emerald-500 font-bold' : (isPrimary ? 'text-blue-500' : 'text-gray-400')
-                                            }`}>
-                                            {timeContext}
-                                        </span>
-
-                                        {/* Goal Details */}
-                                        <h3 className={`font-bold text-xs tracking-wider mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                            {isCompleted ? 'GOAL COMPLETED' : goal.label}
-                                        </h3>
-                                        <p className={`font-bold mb-1 ${isPrimary || isCompleted ? 'text-2xl' : 'text-xl'} ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                            {goal.target}kg
-                                        </p>
-
-                                        {/* Actions */}
-                                        {isCompleted ? (
+                                            <p className={`text-sm font-medium mb-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>No active goal</p>
                                             <button
-                                                onClick={() => handleEditGoal(goal)}
-                                                className="mt-2 text-xs font-semibold text-blue-500 hover:text-blue-600 flex items-center gap-1"
+                                                onClick={() => {
+                                                    // Create a new goal template
+                                                    const newGoal = {
+                                                        id: Date.now(),
+                                                        target: currentWeight - 5, // Default suggestion
+                                                        label: `GOAL ${goals.length + 1}`, // Sequential label based on total history
+                                                        date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // +30 days
+                                                        formattedDate: 'Next Month',
+                                                        color: '#3B82F6'
+                                                    };
+                                                    // Open modal for this "new" goal
+                                                    handleEditGoal(newGoal);
+                                                    // We don't save yet, just open modal. 
+                                                    // But logic needs to know it's a "create" action.
+                                                    // For now, let's treat it as editing a template that gets added on save.
+                                                    // Actually, current save logic updates existing ID.
+                                                    // We need to modify save logic to handle "New" vs "Update".
+                                                    // Simplification: We'll add it to goals immediately then edit? 
+                                                    // Better: Set a flag. But for now, let's just use the existing "Add" logic we had for the "+" button maybe?
+                                                    // Actually, I'll create a temporary goal object and append it, relying on user to edit valid fields.
+                                                    setGoals([...goals, newGoal]);
+                                                    setTimeout(() => handleEditGoal(newGoal), 0); // Hack to edit after state update
+                                                }}
+                                                className="text-blue-500 font-bold hover:text-blue-600 flex items-center gap-1"
                                             >
-                                                Set new goal <ArrowRight size={12} />
+                                                Set your next weight goal <ArrowRight size={16} />
                                             </button>
-                                        ) : (
+                                        </div>
+                                    );
+                                }
+
+                                // Active Goals List
+                                return activeGoals.slice(0, 4).map((goal, index) => {
+                                    const isPrimary = index === 0;
+                                    const progress = calculateProgress(84.1, currentWeight, goal.target);
+                                    const radius = 30;
+                                    const circumference = 2 * Math.PI * radius;
+                                    const strokeDashoffset = circumference - (progress / 100) * circumference;
+
+                                    // Hierarchy
+                                    const strokeWidth = isPrimary ? 8 : 4;
+                                    const timeContext = getTimeContext(goal, index);
+
+                                    return (
+                                        <div key={goal.id} className={`relative flex-1 rounded-[2rem] p-6 flex flex-col items-center justify-center shadow-sm transition-all duration-500 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                                            {/* Ring Section */}
+                                            <div className="relative w-24 h-24 mb-2 flex items-center justify-center">
+                                                <svg className="w-full h-full transform -rotate-90">
+                                                    <circle
+                                                        cx="48"
+                                                        cy="48"
+                                                        r={radius}
+                                                        stroke={isDarkMode ? '#374151' : '#F3F4F6'}
+                                                        strokeWidth={strokeWidth}
+                                                        fill="transparent"
+                                                    />
+                                                    <circle
+                                                        cx="48"
+                                                        cy="48"
+                                                        r={radius}
+                                                        stroke={goal.color}
+                                                        strokeWidth={strokeWidth}
+                                                        fill="transparent"
+                                                        strokeDasharray={circumference}
+                                                        strokeDashoffset={strokeDashoffset}
+                                                        strokeLinecap="round"
+                                                        className={!isPrimary ? 'opacity-50 saturate-50' : ''}
+                                                    />
+                                                </svg>
+                                                <span className={`absolute text-2xl ${isPrimary ? 'font-extrabold' : 'font-semibold'} ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                    {Math.round(progress)}%
+                                                </span>
+                                            </div>
+
+                                            {/* Days Left */}
+                                            <span className={`text-[10px] font-medium mb-4 ${isPrimary ? 'text-blue-500' : 'text-gray-400'}`}>
+                                                {timeContext}
+                                            </span>
+
+                                            {/* Goal Details */}
+                                            <h3 className={`font-bold text-xs tracking-wider mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{goal.label}</h3>
+                                            <p className={`font-bold mb-1 ${isPrimary ? 'text-2xl' : 'text-xl'} ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{goal.target}kg</p>
+
+                                            {/* Edit Action */}
                                             <button
                                                 onClick={() => handleEditGoal(goal)}
                                                 className={`flex items-center gap-1 text-xs p-2 -m-2 opacity-50 hover:opacity-100 transition-opacity ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}
@@ -461,10 +467,10 @@ export default function WeightTracker() {
                                                 <span>by {goal.formattedDate}</span>
                                                 <Pencil size={10} />
                                             </button>
-                                        )}
-                                    </div>
-                                );
-                            })}
+                                        </div>
+                                    );
+                                });
+                            })()}
                         </div>
 
 
@@ -632,15 +638,6 @@ export default function WeightTracker() {
 
                 {/* Stand-up Tab */}
                 <button
-                    onClick={() => setActiveTab('standup')}
-                    className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'standup' ? 'text-blue-500' : (isDarkMode ? 'text-gray-500 hover:text-gray-400' : 'text-gray-400 hover:text-gray-600')}`}
-                >
-                    <Mic size={24} strokeWidth={activeTab === 'standup' ? 2.5 : 2} />
-                    <span className={`text-[10px] ${activeTab === 'standup' ? 'font-bold' : 'font-medium'}`}>Stand-up</span>
-                </button>
-
-                {/* Habits Tab */}
-                <button
                     onClick={() => setActiveTab('habits')}
                     className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'habits' ? 'text-blue-500' : (isDarkMode ? 'text-gray-500 hover:text-gray-400' : 'text-gray-400 hover:text-gray-600')}`}
                 >
@@ -651,13 +648,12 @@ export default function WeightTracker() {
 
             {/* Edit Goal Modal */}
             {editingGoal && (() => {
-                const isGoal1Completed = currentWeight <= goals[0].target && currentWeight > 0;
                 return (
                     <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
                         <div className={`w-full max-w-sm rounded-[2rem] p-6 shadow-xl ${isDarkMode ? 'bg-gray-800' : 'bg-white'} animate-in slide-in-from-bottom duration-300`}>
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                    {isGoal1Completed && editingGoal.id === 1 ? 'Set New Goal' : `Edit ${editingGoal.label}`}
+                                    {editingGoal.id > 1000 ? 'Set New Goal' : `Edit ${editingGoal.label}`}
                                 </h3>
                                 <button onClick={() => setEditingGoal(null)} className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
                                     <X size={20} className={isDarkMode ? 'text-gray-400' : 'text-gray-500'} />

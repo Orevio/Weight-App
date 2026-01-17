@@ -18,7 +18,8 @@ import {
     ChevronUp,
     Mic,
     Dumbbell,
-    CheckCircle
+    CheckCircle,
+    ArrowRight
 } from 'lucide-react';
 
 export default function WeightTracker() {
@@ -356,20 +357,31 @@ export default function WeightTracker() {
                         {/* Goals Grid */}
                         <div className="flex gap-4 items-start">
                             {goals.map((goal, index) => {
-                                const isPrimary = index === 0;
+                                const isCompleted = currentWeight <= goal.target && currentWeight > 0;
+
+                                // Logic: Goal 2 is primary if Goal 1 is completed
+                                const isGoal1Completed = currentWeight <= goals[0].target && currentWeight > 0;
+                                const isPrimary = index === 0 ? !isCompleted : (index === 1 && isGoal1Completed);
+
+                                // Progress Calculation
                                 const progress = calculateProgress(84.1, currentWeight, goal.target);
                                 const radius = 30;
                                 const circumference = 2 * Math.PI * radius;
-                                const strokeDashoffset = circumference - (progress / 100) * circumference;
+                                const strokeDashoffset = isCompleted
+                                    ? 0 // Full ring
+                                    : circumference - (progress / 100) * circumference;
 
                                 // Hierarchy: Ring thickness + Opacity + Font Weight
-                                const strokeWidth = isPrimary ? 8 : 4;
+                                // Completed: Thicker (+1px). primary: 8px. secondary: 4px.
+                                const strokeWidth = isCompleted ? 9 : (isPrimary ? 8 : 4);
 
                                 // Time Context
-                                const timeContext = getTimeContext(goal, index);
+                                const timeContext = isCompleted
+                                    ? 'Goal achieved'
+                                    : getTimeContext(goal, index);
 
                                 return (
-                                    <div key={index} className={`relative flex-1 rounded-[2rem] p-6 flex flex-col items-center justify-center shadow-sm transition-all duration-300 ${isDarkMode ? 'bg-gray-800' : 'bg-white'
+                                    <div key={index} className={`relative flex-1 rounded-[2rem] p-6 flex flex-col items-center justify-center shadow-sm transition-all duration-500 ${isDarkMode ? 'bg-gray-800' : 'bg-white'
                                         }`}>
                                         {/* Ring Section */}
                                         <div className="relative w-24 h-24 mb-2 flex items-center justify-center">
@@ -392,33 +404,54 @@ export default function WeightTracker() {
                                                     strokeDasharray={circumference}
                                                     strokeDashoffset={strokeDashoffset}
                                                     strokeLinecap="round"
-                                                    className={!isPrimary ? 'opacity-50 saturate-50' : ''}
+                                                    className={`transition-all duration-700 ease-out ${!isPrimary && !isCompleted ? 'opacity-50 saturate-50' : ''}`}
                                                 />
                                             </svg>
-                                            {/* Hierarchy: Font Weight. Same size text, different weight. */}
-                                            <span className={`absolute text-2xl ${isPrimary ? 'font-extrabold' : 'font-semibold'} ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                                {Math.round(progress)}%
-                                            </span>
+
+                                            {/* Completed: Check Icon. In Progress: % Text */}
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                {isCompleted ? (
+                                                    <CheckCircle
+                                                        size={32}
+                                                        className={`text-blue-500 animate-in zoom-in duration-300`}
+                                                        strokeWidth={3}
+                                                    />
+                                                ) : (
+                                                    <span className={`text-2xl transition-all duration-300 ${isPrimary ? 'font-extrabold' : 'font-semibold'} ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                        {Math.round(progress)}%
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
 
-                                        {/* Days Left (Below Ring) */}
-                                        <span className={`text-[10px] font-medium mb-4 ${isPrimary ? 'text-blue-500' : 'text-gray-400'
+                                        {/* Status Label (Below Ring) */}
+                                        <span className={`text-[10px] font-medium mb-4 transition-colors duration-300 ${isCompleted ? 'text-emerald-500 font-bold' : (isPrimary ? 'text-blue-500' : 'text-gray-400')
                                             }`}>
                                             {timeContext}
                                         </span>
 
                                         {/* Goal Details */}
-                                        <h3 className={`font-bold text-xs tracking-wider mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{goal.label}</h3>
-                                        <p className={`font-bold mb-1 ${isPrimary ? 'text-2xl' : 'text-xl'} ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{goal.target}kg</p>
+                                        <h3 className={`font-bold text-xs tracking-wider mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                            {isCompleted ? 'GOAL COMPLETED' : goal.label}
+                                        </h3>
+                                        <p className={`font-bold mb-1 ${isPrimary || isCompleted ? 'text-2xl' : 'text-xl'} ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                            {goal.target}kg
+                                        </p>
 
-                                        {/* Edit Action - Quiet, large hit area */}
-                                        <button
-                                            onClick={() => handleEditGoal(goal)}
-                                            className={`flex items-center gap-1 text-xs p-2 -m-2 opacity-50 hover:opacity-100 transition-opacity ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}
-                                        >
-                                            <span>by {goal.formattedDate}</span>
-                                            <Pencil size={10} />
-                                        </button>
+                                        {/* Actions */}
+                                        {isCompleted ? (
+                                            <button className="mt-2 text-xs font-semibold text-blue-500 hover:text-blue-600 flex items-center gap-1">
+                                                Set new goal <ArrowRight size={12} />
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => handleEditGoal(goal)}
+                                                className={`flex items-center gap-1 text-xs p-2 -m-2 opacity-50 hover:opacity-100 transition-opacity ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}
+                                            >
+                                                <span>by {goal.formattedDate}</span>
+                                                <Pencil size={10} />
+                                            </button>
+                                        )}
                                     </div>
                                 );
                             })}

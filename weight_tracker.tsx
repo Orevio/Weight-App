@@ -552,7 +552,7 @@ export default function WeightTracker() {
                                         onClick={() => setDeletionTargetId(null)} // Click outside to exit edit
                                     >
                                         <div
-                                            className={`w-full flex items-center ${activeGoals.length > 1 ? 'overflow-x-auto snap-x snap-mandatory gap-4 px-4 py-8 -my-4 touch-pan-x' : ''} no-scrollbar`}
+                                            className={`w-full flex items-center ${activeGoals.length > 1 ? 'overflow-x-auto snap-x snap-mandatory gap-4 px-4 py-8 -my-4 overscroll-x-contain' : ''} no-scrollbar`}
                                             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                                             onScroll={(e) => {
                                                 // Exit edit mode on scroll

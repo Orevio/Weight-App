@@ -676,15 +676,15 @@ export default function WeightTracker() {
 
                                         {/* External Add Goal Action */}
                                         {activeGoals.length < 4 && (
-                                            <div className="flex flex-col items-center mt-6">
+                                            <div className={`flex flex-col items-start mt-3 ml-1 ${activeGoals.length > 0 ? 'opacity-85' : ''}`}>
                                                 <button
                                                     onClick={() => handleAddNewGoal()}
-                                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all active:scale-95 ${isDarkMode ? 'text-blue-400 hover:bg-white/5' : 'text-blue-600 hover:bg-gray-50'}`}
+                                                    className={`flex items-center gap-2 py-2 pr-4 rounded-xl transition-all active:scale-95 ${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
                                                 >
-                                                    <Plus size={16} strokeWidth={2.5} />
-                                                    <span className="font-semibold text-sm">Add another goal</span>
+                                                    <Plus size={14} strokeWidth={2} />
+                                                    <span className="text-[14px] font-medium">Add another goal</span>
                                                 </button>
-                                                <span className={`text-[10px] font-medium mt-1 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                                                <span className={`text-[12px] leading-none ml-[22px] ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>
                                                     Up to 4 goals
                                                 </span>
                                             </div>

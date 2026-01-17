@@ -552,13 +552,16 @@ export default function WeightTracker() {
                                         onClick={() => setDeletionTargetId(null)} // Click outside to exit edit
                                     >
                                         <div
-                                            className={`w-full flex items-center ${activeGoals.length > 1 ? 'overflow-x-auto snap-x snap-mandatory gap-4 px-4 py-8 -my-4 overscroll-x-contain' : ''} no-scrollbar`}
+                                            className={`w-full flex items-center ${activeGoals.length > 1 ? 'overflow-x-auto snap-x snap-mandatory gap-3 px-4 py-8 -my-4 overscroll-x-contain' : ''} no-scrollbar`}
                                             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                                             onScroll={(e) => {
                                                 // Exit edit mode on scroll
                                                 if (deletionTargetId !== null) setDeletionTargetId(null);
 
-                                                const index = Math.round(e.currentTarget.scrollLeft / (e.currentTarget.offsetWidth * 0.8)); // Approx 
+                                                // Update scroll index based on card width (approx 50% width)
+                                                // cardWidth ~ 50% of container. 
+                                                const cardWidth = e.currentTarget.offsetWidth / 2;
+                                                const index = Math.round(e.currentTarget.scrollLeft / cardWidth);
                                                 setScrollIndex(index);
                                             }}
                                         >
@@ -591,8 +594,8 @@ export default function WeightTracker() {
                                                 const isAnySelected = deletionTargetId !== null;
                                                 const isDimmed = isAnySelected && !isSelected;
 
-                                                // Layout: 1 goal = 100%, 2+ = 85%
-                                                const widthClass = activeGoals.length > 1 ? 'min-w-[85%] snap-center' : 'w-full';
+                                                // Layout: 1 goal = 100%, 2+ = 50% minus half gap (6px)
+                                                const widthClass = activeGoals.length > 1 ? 'min-w-[calc(50%-6px)] snap-start' : 'w-full';
 
                                                 return (
                                                     <div
@@ -700,7 +703,7 @@ export default function WeightTracker() {
                                                 {activeGoals.slice(0, 4).map((_, idx) => (
                                                     <div
                                                         key={idx}
-                                                        className={`h-1.5 rounded-full transition-all duration-300 ${idx === 0 ? 'w-4 bg-blue-500' : 'w-1.5 bg-gray-300 dark:bg-gray-700'}`} // Simplified active logic: Highlight first for now
+                                                        className={`h-1.5 rounded-full transition-all duration-300 ${idx === scrollIndex ? 'w-4 bg-blue-500' : 'w-1.5 bg-gray-300 dark:bg-gray-700'}`}
                                                     ></div>
                                                 ))}
                                             </div>

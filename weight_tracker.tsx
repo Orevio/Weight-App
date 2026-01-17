@@ -903,35 +903,34 @@ export default function WeightTracker() {
             </main>
 
             {/* Bottom Navigation */}
-            < nav className={`fixed bottom-0 left-0 right-0 border-t px-8 py-4 flex justify-between items-center pb-8 z-10 transition-colors ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`
-            }>
+            <nav className={`fixed bottom-0 left-0 right-0 border-t px-8 py-4 flex justify-between items-center pb-8 z-10 transition-colors ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
                 {/* Weight Tab */}
-                < button
+                <button
                     onClick={() => setActiveTab('weight')}
                     className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'weight' ? 'text-blue-500' : (isDarkMode ? 'text-gray-500 hover:text-gray-400' : 'text-gray-400 hover:text-gray-600')}`}
                 >
                     <Scale size={24} strokeWidth={activeTab === 'weight' ? 2.5 : 2} />
                     <span className={`text-[10px] ${activeTab === 'weight' ? 'font-bold' : 'font-medium'}`}>Weight</span>
-                </button >
+                </button>
 
                 {/* Exercise Tab */}
-                < button
+                <button
                     onClick={() => setActiveTab('exercise')}
                     className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'exercise' ? 'text-blue-500' : (isDarkMode ? 'text-gray-500 hover:text-gray-400' : 'text-gray-400 hover:text-gray-600')}`}
                 >
                     <Dumbbell size={24} strokeWidth={activeTab === 'exercise' ? 2.5 : 2} />
                     <span className={`text-[10px] ${activeTab === 'exercise' ? 'font-bold' : 'font-medium'}`}>Exercise</span>
-                </button >
+                </button>
 
                 {/* Stand-up Tab */}
-                < button
+                <button
                     onClick={() => setActiveTab('habits')}
                     className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'habits' ? 'text-blue-500' : (isDarkMode ? 'text-gray-500 hover:text-gray-400' : 'text-gray-400 hover:text-gray-600')}`}
                 >
                     <CheckCircle size={24} strokeWidth={activeTab === 'habits' ? 2.5 : 2} />
                     <span className={`text-[10px] ${activeTab === 'habits' ? 'font-bold' : 'font-medium'}`}>Habits</span>
-                </button >
-            </nav >
+                </button>
+            </nav>
 
             {/* Edit Goal Modal (Bottom Sheet Style) */}
             {
@@ -1032,6 +1031,6 @@ export default function WeightTracker() {
                 })()
             }
 
-        </div >
+        </div>
     );
 }

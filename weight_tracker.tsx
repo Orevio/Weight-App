@@ -655,6 +655,18 @@ export default function WeightTracker() {
                                                         <h3 className={`font-bold text-xs tracking-wider mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{goal.label}</h3>
                                                         <p className={`font-bold mb-1 ${isPrimary ? 'text-2xl' : 'text-xl'} ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{goal.target}kg</p>
 
+                                                        {/* Edit Action (Restored) */}
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (!isSelected) handleEditGoal(goal);
+                                                            }}
+                                                            className={`flex items-center gap-1 text-xs px-2 py-1 opacity-60 hover:opacity-100 transition-opacity ${isDarkMode ? 'text-gray-500' : 'text-gray-400'} ${isSelected ? 'invisible' : ''}`}
+                                                        >
+                                                            <span>by {goal.formattedDate}</span>
+                                                            <Pencil size={12} strokeWidth={2} />
+                                                        </button>
+
                                                     </div>
                                                 );
                                             })}

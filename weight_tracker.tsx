@@ -188,6 +188,15 @@ export default function WeightTracker() {
     const endLongPress = () => {
         if (longPressTimerRef.current) {
             clearTimeout(longPressTimerRef.current);
+            longPressTimerRef.current = null;
+        }
+    };
+
+    // Cancel long press if user moves finger (scroll intent)
+    const handleGoalTouchMove = () => {
+        if (longPressTimerRef.current) {
+            clearTimeout(longPressTimerRef.current);
+            longPressTimerRef.current = null;
         }
     };
 
@@ -557,34 +566,37 @@ export default function WeightTracker() {
                                                         `}
                                                         onTouchStart={() => startLongPress(goal.id)}
                                                         onTouchEnd={endLongPress}
+                                                        onTouchMove={handleGoalTouchMove}
                                                         onMouseDown={() => startLongPress(goal.id)}
                                                         onMouseUp={endLongPress}
                                                         onMouseLeave={endLongPress}
                                                         onClick={(e) => {
-                                                            e.stopPropagation(); // Prevent container click (exit)
-                                                            if (!isSelected) {
-                                                                // Normal edit or select? 
-                                                                // Spec: Long press selects. Tap usually edits.
-                                                                // If something is selected, tapping it should probably do nothing or verify?
-                                                                // If I tap another card while one is selected -> Logic says exit edit mode.
-                                                                if (deletionTargetId !== null) setDeletionTargetId(null);
-                                                                // else handleEditGoal(goal); // Handled by inner button
+                                                            e.stopPropagation(); // Handle click locally
+                                                            if (isSelected) {
+                                                                // Tapping the selected card (not X) -> Undo/Exit
+                                                                setDeletionTargetId(null);
+                                                            } else if (isAnySelected) {
+                                                                // Tapping another card while one is selected -> Undo/Exit (don't select new one yet)
+                                                                setDeletionTargetId(null);
+                                                            } else {
+                                                                // Normal state -> Edit Action
+                                                                handleEditGoal(goal);
                                                             }
                                                         }}
                                                     >
-                                                        {/* Delete Button (Surgical) */}
-                                                        {isSelected && (
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    removeGoal(goal.id);
-                                                                }}
-                                                                className="absolute -top-1 -right-1 bg-red-500 text-white p-2 rounded-full shadow-lg hover:bg-red-600 transition-all duration-200 animate-in fade-in zoom-in"
-                                                                aria-label="Delete goal"
-                                                            >
-                                                                <X size={18} strokeWidth={3} />
-                                                            </button>
-                                                        )}
+                                                        {/* Delete Button (Surgical) - Always rendered for transition */}
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                removeGoal(goal.id);
+                                                            }}
+                                                            className={`absolute -top-1 -right-1 bg-red-500 text-white p-2 rounded-full shadow-lg hover:bg-red-600 transition-all duration-200 
+                                                                ${isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-75 pointer-events-none'}
+                                                            `}
+                                                            aria-label="Delete goal"
+                                                        >
+                                                            <X size={18} strokeWidth={3} />
+                                                        </button>
 
                                                         {/* Ring Section */}
                                                         <div className="relative w-24 h-24 mb-2 flex items-center justify-center">
@@ -630,7 +642,7 @@ export default function WeightTracker() {
                                                                 e.stopPropagation();
                                                                 if (!isSelected) handleEditGoal(goal);
                                                             }}
-                                                            className={`flex items-center gap-1 text-xs p-2 -m-2 opacity-50 hover:opacity-100 transition-opacity ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}
+                                                            className={`flex items-center gap-1 text-xs p-2 -m-2 opacity-50 hover:opacity-100 transition-opacity ${isDarkMode ? 'text-gray-500' : 'text-gray-400'} ${isSelected ? 'invisible' : ''}`}
                                                         >
                                                             <span>by {goal.formattedDate}</span>
                                                             <Pencil size={10} />

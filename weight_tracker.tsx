@@ -757,7 +757,9 @@ export default function WeightTracker() {
                                             </div>
                                         </div>
                                     </div>
-                    </div>
+                                );
+                            })()}
+                        </div>
 
 
 

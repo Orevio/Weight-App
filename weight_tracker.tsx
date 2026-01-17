@@ -557,22 +557,53 @@ export default function WeightTracker() {
                                                 // SINGLE GOAL (Full Width)
                                                 (() => {
                                                     const goal = activeGoals[0];
-                                                    const progress = calculateProgress(84.1, currentWeight, goal.target); // Should use goal.startWeight if available
+                                                    const progress = calculateProgress(84.1, currentWeight, goal.target);
                                                     const radius = 30;
                                                     const circumference = 2 * Math.PI * radius;
                                                     const strokeDashoffset = circumference - (progress / 100) * circumference;
                                                     const timeContext = getTimeContext(goal);
 
+                                                    const isSelected = deletionTargetId === goal.id;
+                                                    const isDeleting = deletingGoalId === goal.id; // actually deleting anim
+
+
                                                     return (
                                                         <div
                                                             key={goal.id}
-                                                            className={`relative w-full rounded-[2rem] p-6 flex flex-row items-center justify-between shadow-sm
-                                                                ${isDarkMode ? 'bg-gray-800' : 'bg-white'} 
+                                                            className={`relative w-full rounded-[2rem] p-6 flex flex-row items-center justify-between shadow-sm transition-all duration-200
+                                                                ${isDarkMode ? 'bg-gray-800' : 'bg-white'}
+                                                                ${isSelected ? 'wiggle z-20 scale-[1.01]' : ''}
+                                                                ${isDeleting ? 'opacity-0 scale-95' : ''}
                                                             `}
-                                                            onClick={() => handleEditGoal(goal)}
+                                                            onTouchStart={() => startLongPress(goal.id)}
+                                                            onTouchEnd={endLongPress}
+                                                            onMouseDown={() => startLongPress(goal.id)}
+                                                            onMouseUp={endLongPress}
+                                                            onMouseLeave={endLongPress}
+                                                            onClick={(e) => {
+                                                                if (isSelected) {
+                                                                    e.stopPropagation();
+                                                                    setDeletionTargetId(null);
+                                                                } else {
+                                                                    handleEditGoal(goal);
+                                                                }
+                                                            }}
                                                         >
+                                                            {/* Delete 'X' Button Overlay */}
+                                                            {isSelected && (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        removeGoal(goal.id);
+                                                                    }}
+                                                                    className="absolute -top-2 -right-2 z-30 bg-red-500 text-white p-1.5 rounded-full shadow-lg hover:bg-red-600 animate-in fade-in zoom-in duration-200"
+                                                                >
+                                                                    <X size={16} strokeWidth={3} />
+                                                                </button>
+                                                            )}
+
                                                             {/* LEft: Text Info */}
-                                                            <div className="flex flex-col items-start">
+                                                            <div className={`flex flex-col items-start ${isSelected ? 'opacity-50 blur-[0.5px]' : ''}`}>
                                                                 <h3 className={`font-bold text-xs tracking-wider mb-1 uppercase ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{goal.label}</h3>
                                                                 <p className={`font-bold text-4xl mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{goal.target}<span className='text-2xl ml-1'>kg</span></p>
 
@@ -583,7 +614,7 @@ export default function WeightTracker() {
                                                             </div>
 
                                                             {/* Right: Ring */}
-                                                            <div className="flex flex-col items-center">
+                                                            <div className={`flex flex-col items-center ${isSelected ? 'opacity-50 blur-[0.5px]' : ''}`}>
                                                                 <div className="relative w-24 h-24 mb-2 flex items-center justify-center">
                                                                     <svg className="w-full h-full transform -rotate-90">
                                                                         <circle cx="48" cy="48" r={radius} stroke={isDarkMode ? '#374151' : '#F3F4F6'} strokeWidth={6} fill="transparent" />
@@ -603,24 +634,67 @@ export default function WeightTracker() {
                                                 })()
                                             ) : (
                                                 // MULTIPLE GOALS (Grid)
+                                                // MULTIPLE GOALS (Grid)
                                                 <div className="grid grid-cols-2 gap-3">
+                                                    {/* Inject Styling for Wiggle */}
+                                                    <style>{`
+                                                        @keyframes wiggle {
+                                                            0% { transform: rotate(0deg); }
+                                                            25% { transform: rotate(-1.5deg); }
+                                                            50% { transform: rotate(0deg); }
+                                                            75% { transform: rotate(1.5deg); }
+                                                            100% { transform: rotate(0deg); }
+                                                        }
+                                                        .wiggle { animation: wiggle 0.15s ease-in-out infinite; }
+                                                    `}</style>
+
                                                     {activeGoals.slice(0, 4).map((goal) => {
                                                         const progress = calculateProgress(84.1, currentWeight, goal.target);
-                                                        const radius = 30; // Slightly smaller for grid? user said "card height consistent". Let's keep 30.
+                                                        const radius = 30;
                                                         const circumference = 2 * Math.PI * radius;
                                                         const strokeDashoffset = circumference - (progress / 100) * circumference;
                                                         const timeContext = getTimeContext(goal);
 
+                                                        const isSelected = deletionTargetId === goal.id;
+                                                        const isDeleting = deletingGoalId === goal.id;
+
                                                         return (
                                                             <div
                                                                 key={goal.id}
-                                                                className={`relative w-full rounded-[2rem] p-5 flex flex-col items-center justify-center text-center shadow-sm aspect-square
-                                                                    ${isDarkMode ? 'bg-gray-800' : 'bg-white'} 
+                                                                className={`relative w-full rounded-[2rem] p-5 flex flex-col items-center justify-center text-center shadow-sm aspect-square transition-all duration-200
+                                                                    ${isDarkMode ? 'bg-gray-800' : 'bg-white'}
+                                                                    ${isSelected ? 'wiggle z-20 scale-[1.01]' : ''}
+                                                                    ${isDeleting ? 'opacity-0 scale-95' : ''}
                                                                 `}
-                                                                onClick={() => handleEditGoal(goal)}
+                                                                onTouchStart={() => startLongPress(goal.id)}
+                                                                onTouchEnd={endLongPress}
+                                                                onMouseDown={() => startLongPress(goal.id)}
+                                                                onMouseUp={endLongPress}
+                                                                onMouseLeave={endLongPress}
+                                                                onClick={(e) => {
+                                                                    if (isSelected) {
+                                                                        e.stopPropagation();
+                                                                        setDeletionTargetId(null);
+                                                                    } else {
+                                                                        handleEditGoal(goal);
+                                                                    }
+                                                                }}
                                                             >
+                                                                {/* Delete 'X' Button Overlay */}
+                                                                {isSelected && (
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            removeGoal(goal.id);
+                                                                        }}
+                                                                        className="absolute -top-2 -right-2 z-30 bg-red-500 text-white p-1.5 rounded-full shadow-lg hover:bg-red-600 animate-in fade-in zoom-in duration-200"
+                                                                    >
+                                                                        <X size={16} strokeWidth={3} />
+                                                                    </button>
+                                                                )}
+
                                                                 {/* Ring Centered Top */}
-                                                                <div className="relative w-20 h-20 mb-3 flex items-center justify-center">
+                                                                <div className={`relative w-20 h-20 mb-3 flex items-center justify-center ${isSelected ? 'opacity-50 blur-[0.5px]' : ''}`}>
                                                                     <svg className="w-full h-full transform -rotate-90">
                                                                         <circle cx="40" cy="40" r={26} stroke={isDarkMode ? '#374151' : '#F3F4F6'} strokeWidth={5} fill="transparent" />
                                                                         <circle cx="40" cy="40" r={26} stroke={goal.color} strokeWidth={5} fill="transparent"
@@ -639,308 +713,313 @@ export default function WeightTracker() {
                                                                 <h3 className={`font-bold text-[10px] tracking-wider mb-0.5 uppercase ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{goal.label}</h3>
                                                                 <p className={`font-bold text-xl mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{goal.target}kg</p>
 
-                                                                <div className={`flex items-center gap-1 text-[10px] font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                                                    <span>by {goal.formattedDate}</span>
-                                                                    <Pencil size={10} strokeWidth={2} className="opacity-50" />
-                                                                </div>
+                                                                <span>by {goal.formattedDate}</span>
+                                                                <Pencil size={10} strokeWidth={2} className="opacity-50" />
                                                             </div>
-                                                        );
+                                                                
+                                                                {/* Optional overlay for click capture to prevent edits while wiggling */ }
+                                                        { isSelected && <div className="absolute inset-0 z-10" /> }
+                                                            </div>
+                                            );
                                                     })}
-                                                </div>
+                                        </div>
                                             )}
 
-                                            {/* CTA Action - Centered below */}
-                                            <div className="flex flex-col items-center mt-5">
-                                                <button
-                                                    onClick={() => activeGoals.length < 4 && handleAddNewGoal()}
-                                                    disabled={activeGoals.length >= 4}
-                                                    className={`py-2 px-4 font-semibold text-[15px] transition-opacity ${activeGoals.length >= 4
-                                                            ? 'opacity-40 cursor-not-allowed text-gray-400'
-                                                            : 'opacity-100 hover:opacity-80 active:opacity-60 text-[#3B82F6]'
-                                                        }`}
-                                                >
-                                                    + Add another goal
-                                                </button>
-                                                <span className={`text-[12px] mt-0.5 opacity-55 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                                    {activeGoals.length >= 4 ? "Goal limit reached (4/4)" : "Up to 4 goals"}
-                                                </span>
+                                        {/* CTA Action - Centered below */}
+                                        <div className="flex flex-col items-center mt-5">
+                                            <button
+                                                onClick={() => activeGoals.length < 4 && handleAddNewGoal()}
+                                                disabled={activeGoals.length >= 4}
+                                                className={`py-2 px-4 font-semibold text-[15px] transition-opacity ${activeGoals.length >= 4
+                                                    ? 'opacity-40 cursor-not-allowed text-gray-400'
+                                                    : 'opacity-100 hover:opacity-80 active:opacity-60 text-[#3B82F6]'
+                                                    }`}
+                                            >
+                                                + Add another goal
+                                            </button>
+                                            <span className={`text-[12px] mt-0.5 opacity-55 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                {activeGoals.length >= 4 ? "Goal limit reached (4/4)" : "Up to 4 goals"}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    </div>
+                        );
+                            })()}
+                    </div>
+
+
+
+                    {/* Add New Entry */}
+                    <div className={`rounded-[2rem] p-6 shadow-sm transition-colors ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                        <h2 className={`text-lg font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Add New Entry</h2>
+                        <div className="space-y-4">
+                            <div className={`flex items-center px-4 rounded-xl ${isDarkMode ? 'bg-gray-700' : 'bg-[#F8F9FB]'}`}>
+                                <Calendar size={20} className="text-gray-400" />
+                                <input
+                                    type="date"
+                                    value={newDate}
+                                    onChange={(e) => setNewDate(e.target.value)}
+                                    className={`w-full bg-transparent border-none py-4 px-3 focus:ring-0 outline-none font-medium ${isDarkMode ? 'text-white [color-scheme:dark]' : 'text-gray-700'}`}
+                                />
+                            </div>
+                            <div className={`flex items-center px-4 rounded-xl transition-all duration-200 border-2 ${weightError
+                                ? (isDarkMode ? 'bg-red-900/20 border-red-500/50' : 'bg-[#FFF5F5] border-red-200')
+                                : (isDarkMode ? 'bg-gray-700 border-transparent' : 'bg-[#F8F9FB] border-transparent')
+                                }`}>
+                                <Scale size={20} className={weightError ? "text-red-400" : "text-gray-400"} />
+                                <input
+                                    ref={weightInputRef}
+                                    type="number"
+                                    step="0.1"
+                                    placeholder="Weight (kg)"
+                                    value={newWeight}
+                                    onChange={(e) => {
+                                        setNewWeight(e.target.value);
+                                        if (weightError) setWeightError(false);
+                                    }}
+                                    className={`w-full bg-transparent border-none py-4 px-3 focus:ring-0 outline-none font-medium ${isDarkMode ? 'text-white placeholder-gray-500' : 'text-gray-700'
+                                        }`}
+                                />
+                            </div>
+                            {weightError && (
+                                <p className="text-xs text-red-500 font-medium px-2 animate-in fade-in slide-in-from-top-1">
+                                    Please enter your weight first
+                                </p>
+                            )}
+                            <button
+                                onClick={addEntry}
+                                className="w-full bg-[#3B82F6] text-white font-bold py-4 rounded-xl hover:bg-blue-600 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30"
+                            >
+                                <Plus size={20} />
+                                Add Log Entry
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* History */}
+                    <div className="space-y-4">
+                        <div
+                            className="flex justify-between items-center px-2 py-2 -mx-2 cursor-pointer transition-colors"
+                            onClick={() => entries.length > 3 && setIsHistoryExpanded(!isHistoryExpanded)}
+                        >
+                            <h2 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>History</h2>
+                            {entries.length > 3 && (
+                                <div className="flex items-center gap-1 text-blue-500 font-semibold text-sm">
+                                    <span>{isHistoryExpanded ? 'Show less' : 'Show more'}</span>
+                                    {isHistoryExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="relative space-y-4 transition-all duration-300 ease-out">
+                            {(isHistoryExpanded ? entries : entries.slice(0, 3)).map((entry, index) => {
+                                const dateObj = new Date(entry.date);
+                                const day = dateObj.getUTCDate();
+                                const month = dateObj.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' }).toUpperCase();
+
+                                // Calculate logic for display
+                                const prevWeight = index < entries.length - 1 ? entries[index + 1].weight : null;
+                                const weightDiff = prevWeight ? (entry.weight - prevWeight) : 0;
+                                const changeStr = prevWeight ? Math.abs(weightDiff).toFixed(1) : null;
+                                const isGain = weightDiff > 0;
+
+                                const isDeleting = deletingIds.includes(entry.id);
+
+                                return (
+                                    <div
+                                        key={entry.id}
+                                        className={`rounded-2xl p-4 flex items-center justify-between shadow-sm transition-all duration-700 ease-out transform ${isDarkMode ? 'bg-gray-800' : 'bg-white'
+                                            } ${isDeleting ? 'opacity-0 translate-x-12 scale-95' : 'opacity-100 translate-x-0 scale-100'
+                                            }`}
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className={`rounded-xl w-14 h-14 flex flex-col items-center justify-center ${isDarkMode ? 'bg-gray-700 text-gray-400' : 'bg-[#F3F5F7] text-gray-600'}`}>
+                                                <span className="text-[10px] font-bold tracking-wider">{month}</span>
+                                                <span className={`text-lg font-bold leading-none ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{day}</span>
                                             </div>
+                                            <div>
+                                                <p className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{entry.weight} kg</p>
+                                                <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>{prevWeight ? 'Recorded' : 'Initial weight'}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            {changeStr && (
+                                                <span className={`text-sm font-bold ${isGain ? 'text-red-400' : 'text-green-400'}`}>
+                                                    {isGain ? '+' : '-'}{changeStr}kg
+                                                </span>
+                                            )}
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    deleteEntry(entry.id);
+                                                }}
+                                                className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${isDarkMode ? 'text-red-400 hover:bg-red-900/30' : 'text-red-300 hover:text-red-500 hover:bg-red-50'}`}
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
                                         </div>
                                     </div>
                                 );
-                            })()}
+                            })}
+
+                            {/* Fade Mask (Only in collapsed state and if more entries exist) */}
+                            {!isHistoryExpanded && entries.length > 3 && (
+                                <div className={`absolute bottom-0 left-0 right-0 h-24 pointer-events-none bg-gradient-to-t ${isDarkMode ? 'from-gray-900' : 'from-[#F5F7FA]'
+                                    } to-transparent`} />
+                            )}
                         </div>
-
-
-
-                        {/* Add New Entry */}
-                        <div className={`rounded-[2rem] p-6 shadow-sm transition-colors ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                            <h2 className={`text-lg font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Add New Entry</h2>
-                            <div className="space-y-4">
-                                <div className={`flex items-center px-4 rounded-xl ${isDarkMode ? 'bg-gray-700' : 'bg-[#F8F9FB]'}`}>
-                                    <Calendar size={20} className="text-gray-400" />
-                                    <input
-                                        type="date"
-                                        value={newDate}
-                                        onChange={(e) => setNewDate(e.target.value)}
-                                        className={`w-full bg-transparent border-none py-4 px-3 focus:ring-0 outline-none font-medium ${isDarkMode ? 'text-white [color-scheme:dark]' : 'text-gray-700'}`}
-                                    />
-                                </div>
-                                <div className={`flex items-center px-4 rounded-xl transition-all duration-200 border-2 ${weightError
-                                    ? (isDarkMode ? 'bg-red-900/20 border-red-500/50' : 'bg-[#FFF5F5] border-red-200')
-                                    : (isDarkMode ? 'bg-gray-700 border-transparent' : 'bg-[#F8F9FB] border-transparent')
-                                    }`}>
-                                    <Scale size={20} className={weightError ? "text-red-400" : "text-gray-400"} />
-                                    <input
-                                        ref={weightInputRef}
-                                        type="number"
-                                        step="0.1"
-                                        placeholder="Weight (kg)"
-                                        value={newWeight}
-                                        onChange={(e) => {
-                                            setNewWeight(e.target.value);
-                                            if (weightError) setWeightError(false);
-                                        }}
-                                        className={`w-full bg-transparent border-none py-4 px-3 focus:ring-0 outline-none font-medium ${isDarkMode ? 'text-white placeholder-gray-500' : 'text-gray-700'
-                                            }`}
-                                    />
-                                </div>
-                                {weightError && (
-                                    <p className="text-xs text-red-500 font-medium px-2 animate-in fade-in slide-in-from-top-1">
-                                        Please enter your weight first
-                                    </p>
-                                )}
-                                <button
-                                    onClick={addEntry}
-                                    className="w-full bg-[#3B82F6] text-white font-bold py-4 rounded-xl hover:bg-blue-600 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30"
-                                >
-                                    <Plus size={20} />
-                                    Add Log Entry
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* History */}
-                        <div className="space-y-4">
-                            <div
-                                className="flex justify-between items-center px-2 py-2 -mx-2 cursor-pointer transition-colors"
-                                onClick={() => entries.length > 3 && setIsHistoryExpanded(!isHistoryExpanded)}
-                            >
-                                <h2 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>History</h2>
-                                {entries.length > 3 && (
-                                    <div className="flex items-center gap-1 text-blue-500 font-semibold text-sm">
-                                        <span>{isHistoryExpanded ? 'Show less' : 'Show more'}</span>
-                                        {isHistoryExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="relative space-y-4 transition-all duration-300 ease-out">
-                                {(isHistoryExpanded ? entries : entries.slice(0, 3)).map((entry, index) => {
-                                    const dateObj = new Date(entry.date);
-                                    const day = dateObj.getUTCDate();
-                                    const month = dateObj.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' }).toUpperCase();
-
-                                    // Calculate logic for display
-                                    const prevWeight = index < entries.length - 1 ? entries[index + 1].weight : null;
-                                    const weightDiff = prevWeight ? (entry.weight - prevWeight) : 0;
-                                    const changeStr = prevWeight ? Math.abs(weightDiff).toFixed(1) : null;
-                                    const isGain = weightDiff > 0;
-
-                                    const isDeleting = deletingIds.includes(entry.id);
-
-                                    return (
-                                        <div
-                                            key={entry.id}
-                                            className={`rounded-2xl p-4 flex items-center justify-between shadow-sm transition-all duration-700 ease-out transform ${isDarkMode ? 'bg-gray-800' : 'bg-white'
-                                                } ${isDeleting ? 'opacity-0 translate-x-12 scale-95' : 'opacity-100 translate-x-0 scale-100'
-                                                }`}
-                                        >
-                                            <div className="flex items-center gap-4">
-                                                <div className={`rounded-xl w-14 h-14 flex flex-col items-center justify-center ${isDarkMode ? 'bg-gray-700 text-gray-400' : 'bg-[#F3F5F7] text-gray-600'}`}>
-                                                    <span className="text-[10px] font-bold tracking-wider">{month}</span>
-                                                    <span className={`text-lg font-bold leading-none ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{day}</span>
-                                                </div>
-                                                <div>
-                                                    <p className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{entry.weight} kg</p>
-                                                    <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>{prevWeight ? 'Recorded' : 'Initial weight'}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-4">
-                                                {changeStr && (
-                                                    <span className={`text-sm font-bold ${isGain ? 'text-red-400' : 'text-green-400'}`}>
-                                                        {isGain ? '+' : '-'}{changeStr}kg
-                                                    </span>
-                                                )}
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        deleteEntry(entry.id);
-                                                    }}
-                                                    className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${isDarkMode ? 'text-red-400 hover:bg-red-900/30' : 'text-red-300 hover:text-red-500 hover:bg-red-50'}`}
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-
-                                {/* Fade Mask (Only in collapsed state and if more entries exist) */}
-                                {!isHistoryExpanded && entries.length > 3 && (
-                                    <div className={`absolute bottom-0 left-0 right-0 h-24 pointer-events-none bg-gradient-to-t ${isDarkMode ? 'from-gray-900' : 'from-[#F5F7FA]'
-                                        } to-transparent`} />
-                                )}
-                            </div>
-                        </div>
-
-
                     </div>
 
-                    {/* Placeholder Tabs */}
-                    {['Exercise', 'Stand-up', 'Habits'].map((tabName) => (
-                        <div key={tabName} className="w-[25%] px-5 flex flex-col items-center justify-center opacity-50 space-y-4">
-                            <div className={`p-6 rounded-full ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
-                                {tabName === 'Exercise' && <Dumbbell size={48} className={isDarkMode ? 'text-gray-600' : 'text-gray-400'} />}
-                                {tabName === 'Stand-up' && <Mic size={48} className={isDarkMode ? 'text-gray-600' : 'text-gray-400'} />}
-                                {tabName === 'Habits' && <CheckCircle size={48} className={isDarkMode ? 'text-gray-600' : 'text-gray-400'} />}
-                            </div>
-                            <p className={`text-xl font-bold ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                                {tabName} Tracking
-                            </p>
-                            <p className={`text-sm ${isDarkMode ? 'text-gray-700' : 'text-gray-500'}`}>Coming Soon</p>
-                        </div>
-                    ))}
-                </div>
-            </main>
 
-            {/* Bottom Navigation */}
-            <nav className={`fixed bottom-0 left-0 right-0 border-t px-8 py-4 flex justify-between items-center pb-8 z-10 transition-colors ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
-                {/* Weight Tab */}
-                <button
-                    onClick={() => setActiveTab('weight')}
-                    className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'weight' ? 'text-blue-500' : (isDarkMode ? 'text-gray-500 hover:text-gray-400' : 'text-gray-400 hover:text-gray-600')}`}
+                </div>
+
+                {/* Placeholder Tabs */}
+                {['Exercise', 'Stand-up', 'Habits'].map((tabName) => (
+                    <div key={tabName} className="w-[25%] px-5 flex flex-col items-center justify-center opacity-50 space-y-4">
+                        <div className={`p-6 rounded-full ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                            {tabName === 'Exercise' && <Dumbbell size={48} className={isDarkMode ? 'text-gray-600' : 'text-gray-400'} />}
+                            {tabName === 'Stand-up' && <Mic size={48} className={isDarkMode ? 'text-gray-600' : 'text-gray-400'} />}
+                            {tabName === 'Habits' && <CheckCircle size={48} className={isDarkMode ? 'text-gray-600' : 'text-gray-400'} />}
+                        </div>
+                        <p className={`text-xl font-bold ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                            {tabName} Tracking
+                        </p>
+                        <p className={`text-sm ${isDarkMode ? 'text-gray-700' : 'text-gray-500'}`}>Coming Soon</p>
+                    </div>
+                ))}
+        </div>
+            </main >
+
+        {/* Bottom Navigation */ }
+        < nav className = {`fixed bottom-0 left-0 right-0 border-t px-8 py-4 flex justify-between items-center pb-8 z-10 transition-colors ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`
+}>
+    {/* Weight Tab */ }
+    < button
+onClick = {() => setActiveTab('weight')}
+className = {`flex flex-col items-center gap-1 transition-colors ${activeTab === 'weight' ? 'text-blue-500' : (isDarkMode ? 'text-gray-500 hover:text-gray-400' : 'text-gray-400 hover:text-gray-600')}`}
                 >
                     <Scale size={24} strokeWidth={activeTab === 'weight' ? 2.5 : 2} />
                     <span className={`text-[10px] ${activeTab === 'weight' ? 'font-bold' : 'font-medium'}`}>Weight</span>
-                </button>
+                </button >
 
-                {/* Exercise Tab */}
-                <button
-                    onClick={() => setActiveTab('exercise')}
-                    className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'exercise' ? 'text-blue-500' : (isDarkMode ? 'text-gray-500 hover:text-gray-400' : 'text-gray-400 hover:text-gray-600')}`}
+    {/* Exercise Tab */ }
+    < button
+onClick = {() => setActiveTab('exercise')}
+className = {`flex flex-col items-center gap-1 transition-colors ${activeTab === 'exercise' ? 'text-blue-500' : (isDarkMode ? 'text-gray-500 hover:text-gray-400' : 'text-gray-400 hover:text-gray-600')}`}
                 >
                     <Dumbbell size={24} strokeWidth={activeTab === 'exercise' ? 2.5 : 2} />
                     <span className={`text-[10px] ${activeTab === 'exercise' ? 'font-bold' : 'font-medium'}`}>Exercise</span>
-                </button>
+                </button >
 
-                {/* Stand-up Tab */}
-                <button
-                    onClick={() => setActiveTab('habits')}
-                    className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'habits' ? 'text-blue-500' : (isDarkMode ? 'text-gray-500 hover:text-gray-400' : 'text-gray-400 hover:text-gray-600')}`}
+    {/* Stand-up Tab */ }
+    < button
+onClick = {() => setActiveTab('habits')}
+className = {`flex flex-col items-center gap-1 transition-colors ${activeTab === 'habits' ? 'text-blue-500' : (isDarkMode ? 'text-gray-500 hover:text-gray-400' : 'text-gray-400 hover:text-gray-600')}`}
                 >
                     <CheckCircle size={24} strokeWidth={activeTab === 'habits' ? 2.5 : 2} />
                     <span className={`text-[10px] ${activeTab === 'habits' ? 'font-bold' : 'font-medium'}`}>Habits</span>
-                </button>
-            </nav>
+                </button >
+            </nav >
 
-            {/* Edit Goal Modal (Bottom Sheet Style) */}
-            {editingGoal && (() => {
-                // Validation State
-                const isValidDate = isFutureDate(editDateValue);
+    {/* Edit Goal Modal (Bottom Sheet Style) */ }
+{
+    editingGoal && (() => {
+        // Validation State
+        const isValidDate = isFutureDate(editDateValue);
 
-                // Calculate tomorrow for min date
-                const tomorrow = new Date();
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                const minDate = tomorrow.toISOString().split('T')[0];
+        // Calculate tomorrow for min date
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const minDate = tomorrow.toISOString().split('T')[0];
 
-                return (
-                    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center sm:p-4">
-                        <div className={`w-full max-w-sm sm:rounded-[2rem] rounded-t-[2rem] p-6 shadow-xl ${isDarkMode ? 'bg-gray-800' : 'bg-white'} animate-in slide-in-from-bottom duration-300`}>
+        return (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center sm:p-4">
+                <div className={`w-full max-w-sm sm:rounded-[2rem] rounded-t-[2rem] p-6 shadow-xl ${isDarkMode ? 'bg-gray-800' : 'bg-white'} animate-in slide-in-from-bottom duration-300`}>
 
-                            {/* Drag Handle (Visual) */}
-                            <div className="w-full flex justify-center mb-6">
-                                <div className={`w-12 h-1 rounded-full ${isDarkMode ? 'bg-gray-600' : 'bg-gray-300'}`}></div>
-                            </div>
+                    {/* Drag Handle (Visual) */}
+                    <div className="w-full flex justify-center mb-6">
+                        <div className={`w-12 h-1 rounded-full ${isDarkMode ? 'bg-gray-600' : 'bg-gray-300'}`}></div>
+                    </div>
 
-                            <div className="flex justify-between items-center mb-8">
-                                <h3 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                    Edit goal
-                                </h3>
-                                <button
-                                    onClick={saveGoal}
-                                    disabled={!isValidDate}
-                                    className={`font-bold transition-colors ${isValidDate ? 'text-blue-500 hover:text-blue-600' : 'text-gray-400 cursor-not-allowed'}`}
-                                >
-                                    Done
-                                </button>
-                            </div>
+                    <div className="flex justify-between items-center mb-8">
+                        <h3 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                            Edit goal
+                        </h3>
+                        <button
+                            onClick={saveGoal}
+                            disabled={!isValidDate}
+                            className={`font-bold transition-colors ${isValidDate ? 'text-blue-500 hover:text-blue-600' : 'text-gray-400 cursor-not-allowed'}`}
+                        >
+                            Done
+                        </button>
+                    </div>
 
-                            <div className="space-y-6 mb-8">
-                                {/* Target Weight Input */}
-                                <div>
-                                    <label className={`block text-xs font-bold uppercase tracking-wider mb-3 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Target Weight</label>
-                                    <div className={`flex items-center justify-between px-6 py-4 rounded-2xl ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                                        <input
-                                            type="number"
-                                            value={editWeightValue}
-                                            onChange={(e) => setEditWeightValue(e.target.value)}
-                                            className={`bg-transparent border-none p-0 focus:ring-0 outline-none font-bold text-3xl ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
-                                            autoFocus
-                                        />
-                                        <span className={`text-lg font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>kg</span>
-                                    </div>
-                                </div>
-
-                                {/* Target Date Input */}
-                                <div>
-                                    <label className={`block text-xs font-bold uppercase tracking-wider mb-3 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Target Date</label>
-                                    <div className={`relative flex items-center px-6 py-4 rounded-2xl transition-all border-2 ${!isValidDate && editDateValue
-                                        ? (isDarkMode ? 'bg-red-900/10 border-red-500/50' : 'bg-red-50 border-red-200')
-                                        : (isDarkMode ? 'bg-gray-700 border-transparent' : 'bg-gray-50 border-transparent')
-                                        }`}>
-                                        <input
-                                            type="date"
-                                            min={minDate}
-                                            value={editDateValue}
-                                            onChange={(e) => setEditDateValue(e.target.value)}
-                                            className={`w-full bg-transparent border-none p-0 focus:ring-0 outline-none font-bold text-xl ${!isValidDate && editDateValue
-                                                ? 'text-red-500'
-                                                : (isDarkMode ? 'text-white [color-scheme:dark]' : 'text-gray-900')
-                                                }`}
-                                        />
-                                    </div>
-                                    {!isValidDate && editDateValue && (
-                                        <p className="text-xs text-red-500 font-medium mt-2 px-2 animate-in fade-in">
-                                            Choose a future date
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <button
-                                    onClick={() => setEditingGoal(null)}
-                                    className={`w-full font-bold py-4 rounded-xl transition-colors ${isDarkMode ? 'text-gray-400 hover:text-white hover:bg-gray-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'}`}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={saveGoal}
-                                    disabled={!isValidDate}
-                                    className={`w-full font-bold py-4 rounded-xl transition-all shadow-lg ${isValidDate
-                                        ? 'bg-[#3B82F6] text-white hover:bg-blue-600 shadow-blue-500/30'
-                                        : 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none dark:bg-gray-700 dark:text-gray-500'
-                                        }`}
-                                >
-                                    Save changes
-                                </button>
+                    <div className="space-y-6 mb-8">
+                        {/* Target Weight Input */}
+                        <div>
+                            <label className={`block text-xs font-bold uppercase tracking-wider mb-3 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Target Weight</label>
+                            <div className={`flex items-center justify-between px-6 py-4 rounded-2xl ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                                <input
+                                    type="number"
+                                    value={editWeightValue}
+                                    onChange={(e) => setEditWeightValue(e.target.value)}
+                                    className={`bg-transparent border-none p-0 focus:ring-0 outline-none font-bold text-3xl ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
+                                    autoFocus
+                                />
+                                <span className={`text-lg font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>kg</span>
                             </div>
                         </div>
-                    </div>
-                );
-            })()}
 
-        </div>
+                        {/* Target Date Input */}
+                        <div>
+                            <label className={`block text-xs font-bold uppercase tracking-wider mb-3 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Target Date</label>
+                            <div className={`relative flex items-center px-6 py-4 rounded-2xl transition-all border-2 ${!isValidDate && editDateValue
+                                ? (isDarkMode ? 'bg-red-900/10 border-red-500/50' : 'bg-red-50 border-red-200')
+                                : (isDarkMode ? 'bg-gray-700 border-transparent' : 'bg-gray-50 border-transparent')
+                                }`}>
+                                <input
+                                    type="date"
+                                    min={minDate}
+                                    value={editDateValue}
+                                    onChange={(e) => setEditDateValue(e.target.value)}
+                                    className={`w-full bg-transparent border-none p-0 focus:ring-0 outline-none font-bold text-xl ${!isValidDate && editDateValue
+                                        ? 'text-red-500'
+                                        : (isDarkMode ? 'text-white [color-scheme:dark]' : 'text-gray-900')
+                                        }`}
+                                />
+                            </div>
+                            {!isValidDate && editDateValue && (
+                                <p className="text-xs text-red-500 font-medium mt-2 px-2 animate-in fade-in">
+                                    Choose a future date
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <button
+                            onClick={() => setEditingGoal(null)}
+                            className={`w-full font-bold py-4 rounded-xl transition-colors ${isDarkMode ? 'text-gray-400 hover:text-white hover:bg-gray-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'}`}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={saveGoal}
+                            disabled={!isValidDate}
+                            className={`w-full font-bold py-4 rounded-xl transition-all shadow-lg ${isValidDate
+                                ? 'bg-[#3B82F6] text-white hover:bg-blue-600 shadow-blue-500/30'
+                                : 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none dark:bg-gray-700 dark:text-gray-500'
+                                }`}
+                        >
+                            Save changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    })()
+}
+
+        </div >
     );
 }

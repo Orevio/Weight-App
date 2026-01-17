@@ -496,7 +496,7 @@ export default function WeightTracker() {
                             {(() => {
                                 // Filter Logic: Active vs Completed
                                 const activeGoals = goals
-                                    .filter(g => currentWeight > g.target)
+                                    .filter(g => entries.length === 0 || currentWeight > g.target)
                                     .sort((a, b) => {
                                         // 1. Invalid/Missing Date Check -> Push to end
                                         if (!a.targetDate) return 1;
@@ -528,7 +528,7 @@ export default function WeightTracker() {
                                                     // Create a new goal template
                                                     const newGoal: Goal = {
                                                         id: Date.now(),
-                                                        target: currentWeight - 5, // Default suggestion
+                                                        target: currentWeight > 0 ? currentWeight - 5 : 70, // Default suggestion or 70kg
                                                         label: `GOAL ${goals.length + 1}`, // Sequential label based on total history
                                                         targetDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // +30 days
                                                         formattedDate: 'Next Month',

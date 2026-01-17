@@ -290,20 +290,49 @@ export default function WeightTracker() {
                                 })}
                             </div>
 
-                            {/* Context Footer */}
-                            <div className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                {entries.length > 1 && (
-                                    <>
-                                        <span className={`font-semibold ${(entries[0].weight - entries[1].weight) <= 0
-                                            ? 'text-emerald-500'
-                                            : 'text-red-500'
-                                            }`}>
-                                            {(entries[0].weight - entries[1].weight) <= 0 ? '↓' : '↑'} {Math.abs(entries[0].weight - entries[1].weight).toFixed(1)} kg
-                                        </span>
-                                        <span>since last entry · {new Date(entries[1].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                                    </>
-                                )}
-                                {entries.length === 1 && <span>First entry recorded</span>}
+                            {/* Context Footer with Deviation Bar */}
+                            <div className="mt-6">
+                                {entries.length > 1 && (() => {
+                                    const current = entries[0].weight;
+                                    const prev = entries[1].weight;
+                                    const diff = current - prev;
+                                    const isOffTrack = diff > 0.5; // Threshold
+
+                                    // Bar Logic
+                                    // scale: max deviation ±2kg maps to full width of half-bar?
+                                    // Let's say max range is ±3kg for visual balance
+                                    const maxRange = 3;
+                                    const widthPct = Math.min((Math.abs(diff) / maxRange) * 50, 50); // Max 50% width
+
+                                    return (
+                                        <div className="flex flex-col gap-2">
+                                            {/* Deviation Bar Track */}
+                                            <div className="relative h-2 bg-gray-100 dark:bg-gray-700 rounded-full w-full overflow-hidden flex items-center justify-center">
+                                                {/* Center Marker */}
+                                                <div className="absolute w-[2px] h-full bg-gray-300 dark:bg-gray-600 z-10"></div>
+
+                                                {/* The Bar */}
+                                                <div
+                                                    className={`h-full rounded-full transition-all duration-500 absolute
+                                                        ${diff > 0 ? 'right-1/2 bg-amber-500/80' : 'left-1/2 bg-blue-500'}
+                                                    `}
+                                                    style={{ width: `${widthPct}%` }}
+                                                ></div>
+                                            </div>
+
+                                            {/* Text Context */}
+                                            <div className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                <span className={`font-semibold ${diff <= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                                    {diff <= 0 ? '↓' : '↑'} {Math.abs(diff).toFixed(1)} kg
+                                                </span>
+                                                <span>
+                                                    · {isOffTrack ? 'off track' : 'on track'} since {new Date(entries[1].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                                {entries.length === 1 && <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>First entry recorded</span>}
                             </div>
                         </div>
 
@@ -378,41 +407,7 @@ export default function WeightTracker() {
                             })}
                         </div>
 
-                        {/* Edit Goal Modal */}
-                        {editingGoal && (
-                            <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
-                                <div className={`w-full max-w-sm rounded-[2rem] p-6 shadow-xl ${isDarkMode ? 'bg-gray-800' : 'bg-white'} animate-in slide-in-from-bottom duration-300`}>
-                                    <div className="flex justify-between items-center mb-6">
-                                        <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Edit {editingGoal.label} Date</h3>
-                                        <button onClick={() => setEditingGoal(null)} className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
-                                            <X size={20} className={isDarkMode ? 'text-gray-400' : 'text-gray-500'} />
-                                        </button>
-                                    </div>
 
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Target Date</label>
-                                            <div className={`flex items-center px-4 rounded-xl ${isDarkMode ? 'bg-gray-700' : 'bg-[#F8F9FB]'}`}>
-                                                <Calendar size={20} className="text-gray-400" />
-                                                <input
-                                                    type="date"
-                                                    value={editDateValue}
-                                                    onChange={(e) => setEditDateValue(e.target.value)}
-                                                    className={`w-full bg-transparent border-none py-4 px-3 focus:ring-0 outline-none font-medium ${isDarkMode ? 'text-white [color-scheme:dark]' : 'text-gray-700'}`}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <button
-                                            onClick={saveGoalDate}
-                                            className="w-full bg-[#3B82F6] text-white font-bold py-4 rounded-xl hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/30"
-                                        >
-                                            Update Date
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
 
                         {/* Add New Entry */}
                         <div className={`rounded-[2rem] p-6 shadow-sm transition-colors ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
@@ -593,6 +588,43 @@ export default function WeightTracker() {
                     <span className={`text-[10px] ${activeTab === 'habits' ? 'font-bold' : 'font-medium'}`}>Habits</span>
                 </button>
             </nav>
+
+            {/* Edit Goal Modal */}
+            {editingGoal && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
+                    <div className={`w-full max-w-sm rounded-[2rem] p-6 shadow-xl ${isDarkMode ? 'bg-gray-800' : 'bg-white'} animate-in slide-in-from-bottom duration-300`}>
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Edit {editingGoal.label} Date</h3>
+                            <button onClick={() => setEditingGoal(null)} className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <X size={20} className={isDarkMode ? 'text-gray-400' : 'text-gray-500'} />
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Target Date</label>
+                                <div className={`flex items-center px-4 rounded-xl ${isDarkMode ? 'bg-gray-700' : 'bg-[#F8F9FB]'}`}>
+                                    <Calendar size={20} className="text-gray-400" />
+                                    <input
+                                        type="date"
+                                        value={editDateValue}
+                                        onChange={(e) => setEditDateValue(e.target.value)}
+                                        className={`w-full bg-transparent border-none py-4 px-3 focus:ring-0 outline-none font-medium ${isDarkMode ? 'text-white [color-scheme:dark]' : 'text-gray-700'}`}
+                                    />
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={saveGoalDate}
+                                className="w-full bg-[#3B82F6] text-white font-bold py-4 rounded-xl hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/30"
+                            >
+                                Update Date
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 }

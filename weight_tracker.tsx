@@ -298,64 +298,82 @@ export default function WeightTracker() {
                                 })}
                             </div>
 
-                            {/* Context Footer: Expected Range Indicator */}
+                            {/* Context Footer: Journey Bar */}
                             <div className="mt-6">
-                                {entries.length > 1 && (() => {
+                                {entries.length > 0 && goals.length > 0 && (() => {
+                                    // 1. Define Journey Points
+                                    // Start: Oldest entry (or explicit start?) - Using oldest recorded entry for now
+                                    const startWeight = entries[entries.length - 1].weight;
                                     const current = entries[0].weight;
-                                    const prev = entries[1].weight;
-                                    const diff = current - prev;
 
-                                    // Status Logic
-                                    // "Off track" if gained more than 0.5kg
-                                    const isOffTrack = diff > 0.5;
-                                    const isSignificantlyOff = diff > 2.0;
+                                    // Farthest Goal (The End of the Line) - assumed to be the lowest target
+                                    const sortedGoals = [...goals].sort((a, b) => b.target - a.target); // Descending target
+                                    const farthestGoal = sortedGoals[sortedGoals.length - 1]; // Lowest weight
+                                    const endWeight = farthestGoal.target;
 
-                                    // Color Logic
-                                    // Blue if on track (<= 0.5 gain), Amber if off (> 0.5), Red if severe (> 2.0)
-                                    let indicatorColor = 'bg-blue-500';
-                                    if (isSignificantlyOff) indicatorColor = 'bg-[#EF4444]'; // Soft Red
-                                    else if (isOffTrack) indicatorColor = 'bg-[#F59E0B]'; // Muted Amber
+                                    // 2. Journey Math
+                                    // Total range = Start - End
+                                    const totalRange = startWeight - endWeight;
+                                    // Ensure range is positive and non-zero to avoid bugs
+                                    if (totalRange <= 0) return null;
 
-                                    // Position Logic
-                                    // Map deviation to % position. Center (0 deviation) is 50%.
-                                    // Range is ±3kg. 
-                                    // -3kg (Loss) -> 0% (Left)
-                                    // +3kg (Gain) -> 100% (Right)
-                                    // This follows a standard number line (Lower weight left, Higher right)
-                                    const maxRange = 3;
-                                    const positionPct = 50 + ((diff / maxRange) * 50);
-                                    const clampedPos = Math.min(Math.max(positionPct, 0), 100);
+                                    // Current Progress
+                                    const weightLost = startWeight - current;
+                                    const progressPct = Math.min(Math.max((weightLost / totalRange) * 100, 0), 100);
 
                                     return (
                                         <div className="flex flex-col gap-3">
-                                            {/* Bar Container */}
-                                            <div className="relative h-2 w-full bg-[#E6E8EC] dark:bg-gray-700 rounded-full flex items-center">
-                                                {/* Expected Range Segment (Centered, ~40%) */}
-                                                <div className="absolute left-1/2 -translate-x-1/2 w-[40%] h-full bg-[#D1D5DB] dark:bg-gray-600 rounded-full"></div>
+                                            {/* Journey Track Container */}
+                                            <div className="relative h-1.5 w-full bg-[#E5E7EB] dark:bg-gray-700 rounded-full flex items-center">
 
-                                                {/* Current Position Indicator (The Star) */}
+                                                {/* Blue Progress Fill */}
                                                 <div
-                                                    className={`absolute w-1 h-3.5 rounded-[2px] shadow-sm transform -translate-x-1/2 transition-all duration-500 ease-out z-10 ${indicatorColor}`}
-                                                    style={{ left: `${clampedPos}%` }}
+                                                    className="absolute left-0 top-0 h-full bg-blue-500 rounded-full z-10 transition-all duration-700 ease-out"
+                                                    style={{ width: `${progressPct}%` }}
                                                 ></div>
+
+                                                {/* Current Position Indicator (The "You are here" Pill) */}
+                                                <div
+                                                    className="absolute h-2.5 w-1 bg-blue-500 rounded-full shadow-sm z-20 transform -translate-x-1/2 transition-all duration-700 ease-out"
+                                                    style={{ left: `${progressPct}%` }}
+                                                ></div>
+
+                                                {/* Goal Markers */}
+                                                {goals.map((goal, idx) => {
+                                                    // Calculate relative position
+                                                    const goalDist = startWeight - goal.target;
+                                                    const goalPct = Math.min(Math.max((goalDist / totalRange) * 100, 0), 100);
+                                                    const isPassed = current <= goal.target;
+
+                                                    return (
+                                                        <div
+                                                            key={goal.id}
+                                                            className={`absolute w-2.5 h-2.5 rounded-full border-2 transform -translate-x-1/2 z-10 transition-colors duration-300 ${isPassed
+                                                                    ? 'bg-blue-500 border-blue-500'
+                                                                    : 'bg-[#E5E7EB] dark:bg-gray-700 border-white dark:border-gray-800'
+                                                                }`}
+                                                            style={{ left: `${goalPct}%` }}
+                                                        ></div>
+                                                    );
+                                                })}
                                             </div>
 
-                                            {/* Text Context */}
-                                            <div className="flex items-center gap-2 text-sm">
-                                                <span className={`font-semibold ${diff <= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                                                    {diff <= 0 ? '↓' : '↑'} {Math.abs(diff).toFixed(1)} kg
+                                            {/* Simple Text Support */}
+                                            <div className="flex items-center gap-2 text-sm font-medium">
+                                                <span className="text-emerald-500">
+                                                    ↓ {Math.abs(weightLost).toFixed(1)} kg
                                                 </span>
-                                                <span className={`${isOffTrack ? 'text-amber-600 dark:text-amber-500' : 'text-gray-500 dark:text-gray-400'}`}>
-                                                    · {isOffTrack ? 'Above expected range' : 'On track today'}
+                                                <span className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                    · On track
                                                 </span>
                                             </div>
                                         </div>
                                     );
                                 })()}
-                                {entries.length === 1 && (
+                                {entries.length === 1 && goals.length === 0 && (
                                     <div className="flex flex-col gap-3 mt-6">
-                                        <div className="relative h-2 w-full bg-[#E6E8EC] dark:bg-gray-700 rounded-full"></div>
-                                        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Log more entries to see your expected range</p>
+                                        <div className="relative h-1.5 w-full bg-[#E5E7EB] dark:bg-gray-700 rounded-full"></div>
+                                        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Set a goal to see your journey</p>
                                     </div>
                                 )}
                             </div>

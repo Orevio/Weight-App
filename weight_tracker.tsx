@@ -114,8 +114,9 @@ export default function WeightTracker() {
     const [editingGoal, setEditingGoal] = useState(null);
     const [editDateValue, setEditDateValue] = useState('');
     const [editWeightValue, setEditWeightValue] = useState('');
-    const [isDeleteMode, setDeleteMode] = useState(false);
-    const longPressTimerRef = React.useRef<any>(null); // Using any to avoid type issues with NodeJS.Timeout vs number
+    const [deletionTargetId, setDeletionTargetId] = useState<number | null>(null); // ID of goal in "Edit Mode"
+    const [deletingGoalId, setDeletingGoalId] = useState<number | null>(null); // ID of goal currently animating out
+    const longPressTimerRef = React.useRef<any>(null);
 
     // Initial active goal limit (for dots)
     const [scrollIndex, setScrollIndex] = useState(0);
@@ -165,16 +166,23 @@ export default function WeightTracker() {
     };
 
     const removeGoal = (id) => {
-        setGoals(prev => prev.filter(g => g.id !== id));
-        if (goals.length <= 1) setDeleteMode(false); // Exit if last goal
+        // 1. Animate out
+        setDeletingGoalId(id);
+        setDeletionTargetId(null); // Stop wiggling immediately
+
+        // 2. Actually remove after animation
+        setTimeout(() => {
+            setGoals(prev => prev.filter(g => g.id !== id));
+            setDeletingGoalId(null);
+        }, 250);
     };
 
-    const startLongPress = () => {
+    const startLongPress = (id) => {
         longPressTimerRef.current = setTimeout(() => {
-            setDeleteMode(true);
+            setDeletionTargetId(id);
             // Optional: Vibrate
             if (navigator.vibrate) navigator.vibrate(50);
-        }, 800);
+        }, 500);
     };
 
     const endLongPress = () => {
@@ -183,24 +191,41 @@ export default function WeightTracker() {
         }
     };
 
+    // Clear selection on background click (handled in main usually, or just card blur?)
+    // We'll rely on clicking non-X areas or specialized "Done" if needed, 
+    // but the spec says "User taps outside any card". 
+    // We'll add a listener to the container.
+
     const calculateDaysLeft = (targetDateStr) => {
         const target = new Date(targetDateStr);
         const today = new Date();
-        const diffTime = target - today;
+        today.setHours(0, 0, 0, 0); // Normalize today to midnight
+
+        // Target is usually UTC midnight from input type="date" string (YYYY-MM-DD) which parses as UTC.
+        // But let's check parsing behavior. 
+        // new Date('2026-02-11') -> 2026-02-11T00:00:00.000Z.
+        // today -> Local Time.
+        // Valid comparison requires unifying.
+        // Simple hack: Set target to local midnight of that date if possible, or just work with UTC.
+        // Actually, let's treat targetDateStr as local date parts.
+        const [y, m, d] = targetDateStr.split('-').map(Number);
+        const targetLocal = new Date(y, m - 1, d); // Local midnight
+
+        const diffTime = targetLocal.getTime() - today.getTime();
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         return diffDays;
     };
 
-    const getTimeContext = (goal, index) => {
+    const getTimeContext = (goal) => {
+        if (!goal.date) return "Date not set";
         const days = calculateDaysLeft(goal.date);
-        if (index === 0) {
-            if (days <= 0) return "Due now";
-            return `${days} days left`;
-        } else {
-            if (days > 60) return "Later"; // approx 2 months
-            if (days > 30) return "~1 month away";
-            return `${days} days away`;
-        }
+
+        if (days < 0) return "Overdue";
+        if (days === 0) return "Due today";
+        if (days <= 30) return `${days} days left`;
+        if (days <= 60) return "~1 month left";
+        if (days <= 90) return "~2 months left";
+        return "Later";
     };
 
     const addEntry = () => {
@@ -407,7 +432,30 @@ export default function WeightTracker() {
                         <div className="flex gap-4 items-start">
                             {(() => {
                                 // Filter Logic: Active vs Completed
-                                const activeGoals = goals.filter(g => currentWeight > g.target).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                                const activeGoals = goals
+                                    .filter(g => currentWeight > g.target)
+                                    .sort((a, b) => {
+                                        // 1. Invalid/Missing Date Check -> Push to end
+                                        if (!a.date) return 1;
+                                        if (!b.date) return -1;
+
+                                        const timeA = new Date(a.date).getTime();
+                                        const timeB = new Date(b.date).getTime();
+
+                                        if (isNaN(timeA)) return 1;
+                                        if (isNaN(timeB)) return -1;
+
+                                        // 2. Primary: Chronological (Earliest First)
+                                        if (timeA !== timeB) return timeA - timeB;
+
+                                        // 3. Secondary: Target Weight Descending (Smaller Delta from current comes first)
+                                        // Assuming current weight is higher than targets.
+                                        // A: 80kg, B: 75kg. Current: 85kg. 
+                                        // Delta A = 5, Delta B = 10. 
+                                        // User wants smaller delta first -> A first.
+                                        // So descending target weight.
+                                        return b.target - a.target;
+                                    });
 
                                 // Empty State
                                 if (activeGoals.length === 0) {
@@ -451,16 +499,33 @@ export default function WeightTracker() {
 
                                 // Active Goals List
                                 return (
-                                    <div className="w-full flex flex-col gap-4">
+                                    <div
+                                        className="w-full flex flex-col gap-4"
+                                        onClick={() => setDeletionTargetId(null)} // Click outside to exit edit
+                                    >
                                         <div
-                                            className="w-full flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 no-scrollbar px-1"
+                                            className={`w-full flex ${activeGoals.length > 1 ? 'overflow-x-auto snap-x snap-mandatory gap-4 pb-4 px-4' : ''} no-scrollbar`}
                                             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                                             onScroll={(e) => {
-                                                // Simple scroll tracker for docs
+                                                // Exit edit mode on scroll
+                                                if (deletionTargetId !== null) setDeletionTargetId(null);
+
                                                 const index = Math.round(e.currentTarget.scrollLeft / (e.currentTarget.offsetWidth * 0.8)); // Approx 
                                                 setScrollIndex(index);
                                             }}
                                         >
+                                            {/* Inject Styling for Wiggle */}
+                                            <style>{`
+                                                @keyframes wiggle {
+                                                    0% { transform: rotate(0deg); }
+                                                    25% { transform: rotate(-1.5deg); }
+                                                    50% { transform: rotate(0deg); }
+                                                    75% { transform: rotate(1.5deg); }
+                                                    100% { transform: rotate(0deg); }
+                                                }
+                                                .wiggle { animation: wiggle 0.15s ease-in-out infinite; }
+                                            `}</style>
+
                                             {activeGoals.slice(0, 4).map((goal, index) => {
                                                 const isPrimary = index === 0;
                                                 const progress = calculateProgress(84.1, currentWeight, goal.target);
@@ -470,28 +535,54 @@ export default function WeightTracker() {
 
                                                 // Hierarchy
                                                 const strokeWidth = isPrimary ? 8 : 4;
-                                                const timeContext = getTimeContext(goal, index);
+                                                const timeContext = getTimeContext(goal);
+
+                                                // Interaction States
+                                                const isSelected = deletionTargetId === goal.id;
+                                                const isDeleting = deletingGoalId === goal.id;
+                                                const isAnySelected = deletionTargetId !== null;
+                                                const isDimmed = isAnySelected && !isSelected;
+
+                                                // Layout: 1 goal = 100%, 2+ = 85%
+                                                const widthClass = activeGoals.length > 1 ? 'min-w-[85%] snap-center' : 'w-full';
 
                                                 return (
                                                     <div
                                                         key={goal.id}
-                                                        className={`relative min-w-[85%] snap-center rounded-[2rem] p-6 flex flex-col items-center justify-center shadow-sm transition-all duration-500 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} ${isDeleteMode ? 'ring-2 ring-red-400 shake-animation' : ''}`}
-                                                        onTouchStart={startLongPress}
+                                                        className={`relative ${widthClass} rounded-[2rem] p-6 flex flex-col items-center justify-center transition-all duration-300 transform
+                                                            ${isDarkMode ? 'bg-gray-800' : 'bg-white'} 
+                                                            ${isSelected ? 'shadow-2xl scale-[1.02] z-20 wiggle' : 'shadow-sm z-10'}
+                                                            ${isDimmed ? 'opacity-50 scale-95 blur-[1px]' : 'opacity-100'}
+                                                            ${isDeleting ? 'opacity-0 translate-y-4' : ''}
+                                                        `}
+                                                        onTouchStart={() => startLongPress(goal.id)}
                                                         onTouchEnd={endLongPress}
-                                                        onMouseDown={startLongPress}
+                                                        onMouseDown={() => startLongPress(goal.id)}
                                                         onMouseUp={endLongPress}
                                                         onMouseLeave={endLongPress}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation(); // Prevent container click (exit)
+                                                            if (!isSelected) {
+                                                                // Normal edit or select? 
+                                                                // Spec: Long press selects. Tap usually edits.
+                                                                // If something is selected, tapping it should probably do nothing or verify?
+                                                                // If I tap another card while one is selected -> Logic says exit edit mode.
+                                                                if (deletionTargetId !== null) setDeletionTargetId(null);
+                                                                // else handleEditGoal(goal); // Handled by inner button
+                                                            }
+                                                        }}
                                                     >
-                                                        {/* Delete Button (Visible in Edit Mode) */}
-                                                        {isDeleteMode && (
+                                                        {/* Delete Button (Surgical) */}
+                                                        {isSelected && (
                                                             <button
                                                                 onClick={(e) => {
-                                                                    e.stopPropagation(); // Prevent edit modal
+                                                                    e.stopPropagation();
                                                                     removeGoal(goal.id);
                                                                 }}
-                                                                className="absolute top-2 right-2 bg-red-100 text-red-500 p-1.5 rounded-full hover:bg-red-200 transition-colors z-20"
+                                                                className="absolute -top-1 -right-1 bg-red-500 text-white p-2 rounded-full shadow-lg hover:bg-red-600 transition-all duration-200 animate-in fade-in zoom-in"
+                                                                aria-label="Delete goal"
                                                             >
-                                                                <X size={16} strokeWidth={3} />
+                                                                <X size={18} strokeWidth={3} />
                                                             </button>
                                                         )}
 
@@ -535,7 +626,10 @@ export default function WeightTracker() {
 
                                                         {/* Edit Action */}
                                                         <button
-                                                            onClick={() => !isDeleteMode && handleEditGoal(goal)}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (!isSelected) handleEditGoal(goal);
+                                                            }}
                                                             className={`flex items-center gap-1 text-xs p-2 -m-2 opacity-50 hover:opacity-100 transition-opacity ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}
                                                         >
                                                             <span>by {goal.formattedDate}</span>
@@ -555,11 +649,6 @@ export default function WeightTracker() {
                                                         className={`h-1.5 rounded-full transition-all duration-300 ${idx === 0 ? 'w-4 bg-blue-500' : 'w-1.5 bg-gray-300 dark:bg-gray-700'}`} // Simplified active logic: Highlight first for now
                                                     ></div>
                                                 ))}
-                                            </div>
-                                        )}
-                                        {isDeleteMode && (
-                                            <div className="text-center">
-                                                <button onClick={() => setDeleteMode(false)} className="text-sm font-medium text-gray-500 underline">Done Editing</button>
                                             </div>
                                         )}
                                     </div>

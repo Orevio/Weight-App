@@ -532,7 +532,7 @@ export default function WeightTracker() {
                                         onClick={() => setDeletionTargetId(null)} // Click outside to exit edit
                                     >
                                         <div
-                                            className={`w-full flex ${activeGoals.length > 1 ? 'overflow-x-auto snap-x snap-mandatory gap-4 pb-4 px-4' : ''} no-scrollbar`}
+                                            className={`w-full flex items-center ${activeGoals.length > 1 ? 'overflow-x-auto snap-x snap-mandatory gap-4 pb-4 px-4' : ''} no-scrollbar`}
                                             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                                             onScroll={(e) => {
                                                 // Exit edit mode on scroll
@@ -666,29 +666,33 @@ export default function WeightTracker() {
 
                                                 return (
                                                     <div
-                                                        className={`relative ${widthClass} rounded-[2rem] p-6 flex flex-col items-center justify-center 
-                                                            border-2 border-dashed ${isDarkMode ? 'border-gray-700 bg-gray-800/50' : 'border-gray-200 bg-gray-50'}
+                                                        className={`relative ${widthClass} py-8 px-4 flex flex-col items-center justify-center 
+                                                            rounded-[2rem]
+                                                            ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}
                                                             transition-all duration-200 
-                                                            ${isLimitReached ? 'opacity-60 cursor-not-allowed' : 'active:scale-95 cursor-pointer'}
-                                                            ${deletionTargetId !== null ? 'opacity-50 blur-[1px]' : ''}
+                                                            ${isLimitReached ? 'opacity-50 cursor-not-allowed' : 'active:scale-95 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700'}
+                                                            ${deletionTargetId !== null ? 'opacity-30 blur-[1px]' : ''}
                                                         `}
+                                                        style={{ height: 'fit-content', alignSelf: 'center' }}
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            if (deletionTargetId !== null) return; // Don't trigger if editing
+                                                            if (deletionTargetId !== null) return;
                                                             if (!isLimitReached) handleAddNewGoal();
                                                         }}
                                                     >
-                                                        <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-3 
-                                                            ${isLimitReached ? 'bg-gray-200 dark:bg-gray-700 text-gray-400' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-500'}
-                                                        `}>
-                                                            {isLimitReached ? <Target size={24} /> : <Plus size={24} strokeWidth={2.5} />}
-                                                        </div>
-                                                        <h3 className={`font-semibold text-sm mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                                            {isLimitReached ? 'Goal limit reached' : 'Add new goal'}
-                                                        </h3>
-                                                        <p className="text-xs text-center text-gray-500 px-4">
-                                                            {isLimitReached ? 'Complete a goal to add another' : 'Up to 4 goals'}
-                                                        </p>
+                                                        {isLimitReached ? (
+                                                            <div className="flex flex-col items-center gap-2">
+                                                                <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>Limit reached</span>
+                                                                <span className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">4/4 Goals</span>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex flex-col items-center gap-2 py-4">
+                                                                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-white shadow-sm text-blue-500'}`}>
+                                                                    <Plus size={24} strokeWidth={2.5} />
+                                                                </div>
+                                                                <span className={`text-sm font-semibold ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>Add Goal</span>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 );
                                             })()}

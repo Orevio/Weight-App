@@ -114,6 +114,11 @@ export default function WeightTracker() {
     const [editingGoal, setEditingGoal] = useState(null);
     const [editDateValue, setEditDateValue] = useState('');
     const [editWeightValue, setEditWeightValue] = useState('');
+    const [isDeleteMode, setDeleteMode] = useState(false);
+    const longPressTimerRef = React.useRef<any>(null); // Using any to avoid type issues with NodeJS.Timeout vs number
+
+    // Initial active goal limit (for dots)
+    const [scrollIndex, setScrollIndex] = useState(0);
 
     useEffect(() => {
         localStorage.setItem('weightEntries', JSON.stringify(entries));
@@ -156,6 +161,25 @@ export default function WeightTracker() {
                 return g;
             }));
             setEditingGoal(null);
+        }
+    };
+
+    const removeGoal = (id) => {
+        setGoals(prev => prev.filter(g => g.id !== id));
+        if (goals.length <= 1) setDeleteMode(false); // Exit if last goal
+    };
+
+    const startLongPress = () => {
+        longPressTimerRef.current = setTimeout(() => {
+            setDeleteMode(true);
+            // Optional: Vibrate
+            if (navigator.vibrate) navigator.vibrate(50);
+        }, 800);
+    };
+
+    const endLongPress = () => {
+        if (longPressTimerRef.current) {
+            clearTimeout(longPressTimerRef.current);
         }
     };
 
@@ -343,8 +367,8 @@ export default function WeightTracker() {
                                                         <div
                                                             key={goal.id}
                                                             className={`absolute w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 transform -translate-x-1/2 z-20 transition-colors duration-300 shadow-sm ${isPassed
-                                                                    ? 'bg-blue-500' // Completed: Blue 
-                                                                    : 'bg-gray-400 dark:bg-gray-500' // Future: Visible Mid-Gray
+                                                                ? 'bg-blue-500' // Completed: Blue 
+                                                                : 'bg-gray-400 dark:bg-gray-500' // Future: Visible Mid-Gray
                                                                 }`}
                                                             style={{ left: `${goalPct}%` }}
                                                         ></div>
@@ -426,68 +450,120 @@ export default function WeightTracker() {
                                 }
 
                                 // Active Goals List
-                                return activeGoals.slice(0, 4).map((goal, index) => {
-                                    const isPrimary = index === 0;
-                                    const progress = calculateProgress(84.1, currentWeight, goal.target);
-                                    const radius = 30;
-                                    const circumference = 2 * Math.PI * radius;
-                                    const strokeDashoffset = circumference - (progress / 100) * circumference;
+                                return (
+                                    <div className="w-full flex flex-col gap-4">
+                                        <div
+                                            className="w-full flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 no-scrollbar px-1"
+                                            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                                            onScroll={(e) => {
+                                                // Simple scroll tracker for docs
+                                                const index = Math.round(e.currentTarget.scrollLeft / (e.currentTarget.offsetWidth * 0.8)); // Approx 
+                                                setScrollIndex(index);
+                                            }}
+                                        >
+                                            {activeGoals.slice(0, 4).map((goal, index) => {
+                                                const isPrimary = index === 0;
+                                                const progress = calculateProgress(84.1, currentWeight, goal.target);
+                                                const radius = 30;
+                                                const circumference = 2 * Math.PI * radius;
+                                                const strokeDashoffset = circumference - (progress / 100) * circumference;
 
-                                    // Hierarchy
-                                    const strokeWidth = isPrimary ? 8 : 4;
-                                    const timeContext = getTimeContext(goal, index);
+                                                // Hierarchy
+                                                const strokeWidth = isPrimary ? 8 : 4;
+                                                const timeContext = getTimeContext(goal, index);
 
-                                    return (
-                                        <div key={goal.id} className={`relative flex-1 rounded-[2rem] p-6 flex flex-col items-center justify-center shadow-sm transition-all duration-500 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                                            {/* Ring Section */}
-                                            <div className="relative w-24 h-24 mb-2 flex items-center justify-center">
-                                                <svg className="w-full h-full transform -rotate-90">
-                                                    <circle
-                                                        cx="48"
-                                                        cy="48"
-                                                        r={radius}
-                                                        stroke={isDarkMode ? '#374151' : '#F3F4F6'}
-                                                        strokeWidth={strokeWidth}
-                                                        fill="transparent"
-                                                    />
-                                                    <circle
-                                                        cx="48"
-                                                        cy="48"
-                                                        r={radius}
-                                                        stroke={goal.color}
-                                                        strokeWidth={strokeWidth}
-                                                        fill="transparent"
-                                                        strokeDasharray={circumference}
-                                                        strokeDashoffset={strokeDashoffset}
-                                                        strokeLinecap="round"
-                                                        className={!isPrimary ? 'opacity-50 saturate-50' : ''}
-                                                    />
-                                                </svg>
-                                                <span className={`absolute text-2xl ${isPrimary ? 'font-extrabold' : 'font-semibold'} ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                                    {Math.round(progress)}%
-                                                </span>
-                                            </div>
+                                                return (
+                                                    <div
+                                                        key={goal.id}
+                                                        className={`relative min-w-[85%] snap-center rounded-[2rem] p-6 flex flex-col items-center justify-center shadow-sm transition-all duration-500 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} ${isDeleteMode ? 'ring-2 ring-red-400 shake-animation' : ''}`}
+                                                        onTouchStart={startLongPress}
+                                                        onTouchEnd={endLongPress}
+                                                        onMouseDown={startLongPress}
+                                                        onMouseUp={endLongPress}
+                                                        onMouseLeave={endLongPress}
+                                                    >
+                                                        {/* Delete Button (Visible in Edit Mode) */}
+                                                        {isDeleteMode && (
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation(); // Prevent edit modal
+                                                                    removeGoal(goal.id);
+                                                                }}
+                                                                className="absolute top-2 right-2 bg-red-100 text-red-500 p-1.5 rounded-full hover:bg-red-200 transition-colors z-20"
+                                                            >
+                                                                <X size={16} strokeWidth={3} />
+                                                            </button>
+                                                        )}
 
-                                            {/* Days Left */}
-                                            <span className={`text-[10px] font-medium mb-4 ${isPrimary ? 'text-blue-500' : 'text-gray-400'}`}>
-                                                {timeContext}
-                                            </span>
+                                                        {/* Ring Section */}
+                                                        <div className="relative w-24 h-24 mb-2 flex items-center justify-center">
+                                                            <svg className="w-full h-full transform -rotate-90">
+                                                                <circle
+                                                                    cx="48"
+                                                                    cy="48"
+                                                                    r={radius}
+                                                                    stroke={isDarkMode ? '#374151' : '#F3F4F6'}
+                                                                    strokeWidth={strokeWidth}
+                                                                    fill="transparent"
+                                                                />
+                                                                <circle
+                                                                    cx="48"
+                                                                    cy="48"
+                                                                    r={radius}
+                                                                    stroke={goal.color}
+                                                                    strokeWidth={strokeWidth}
+                                                                    fill="transparent"
+                                                                    strokeDasharray={circumference}
+                                                                    strokeDashoffset={strokeDashoffset}
+                                                                    strokeLinecap="round"
+                                                                    className={!isPrimary ? 'opacity-50 saturate-50' : ''}
+                                                                />
+                                                            </svg>
+                                                            <span className={`absolute text-2xl ${isPrimary ? 'font-extrabold' : 'font-semibold'} ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                                {Math.round(progress)}%
+                                                            </span>
+                                                        </div>
 
-                                            {/* Goal Details */}
-                                            <h3 className={`font-bold text-xs tracking-wider mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{goal.label}</h3>
-                                            <p className={`font-bold mb-1 ${isPrimary ? 'text-2xl' : 'text-xl'} ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{goal.target}kg</p>
+                                                        {/* Days Left */}
+                                                        <span className={`text-[10px] font-medium mb-4 ${isPrimary ? 'text-blue-500' : 'text-gray-400'}`}>
+                                                            {timeContext}
+                                                        </span>
 
-                                            {/* Edit Action */}
-                                            <button
-                                                onClick={() => handleEditGoal(goal)}
-                                                className={`flex items-center gap-1 text-xs p-2 -m-2 opacity-50 hover:opacity-100 transition-opacity ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}
-                                            >
-                                                <span>by {goal.formattedDate}</span>
-                                                <Pencil size={10} />
-                                            </button>
+                                                        {/* Goal Details */}
+                                                        <h3 className={`font-bold text-xs tracking-wider mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{goal.label}</h3>
+                                                        <p className={`font-bold mb-1 ${isPrimary ? 'text-2xl' : 'text-xl'} ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{goal.target}kg</p>
+
+                                                        {/* Edit Action */}
+                                                        <button
+                                                            onClick={() => !isDeleteMode && handleEditGoal(goal)}
+                                                            className={`flex items-center gap-1 text-xs p-2 -m-2 opacity-50 hover:opacity-100 transition-opacity ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}
+                                                        >
+                                                            <span>by {goal.formattedDate}</span>
+                                                            <Pencil size={10} />
+                                                        </button>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
-                                    );
-                                });
+
+                                        {/* Carousel Indicators */}
+                                        {activeGoals.length > 1 && (
+                                            <div className="flex justify-center gap-2">
+                                                {activeGoals.slice(0, 4).map((_, idx) => (
+                                                    <div
+                                                        key={idx}
+                                                        className={`h-1.5 rounded-full transition-all duration-300 ${idx === 0 ? 'w-4 bg-blue-500' : 'w-1.5 bg-gray-300 dark:bg-gray-700'}`} // Simplified active logic: Highlight first for now
+                                                    ></div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {isDeleteMode && (
+                                            <div className="text-center">
+                                                <button onClick={() => setDeleteMode(false)} className="text-sm font-medium text-gray-500 underline">Done Editing</button>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
                             })()}
                         </div>
 

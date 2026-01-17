@@ -551,179 +551,121 @@ export default function WeightTracker() {
                                         className="w-full flex flex-col gap-4"
                                         onClick={() => setDeletionTargetId(null)} // Click outside to exit edit
                                     >
-                                        <div
-                                            className={`w-full flex items-center ${activeGoals.length > 1 ? 'overflow-x-auto snap-x snap-mandatory gap-3 px-4 py-8 -my-4 overscroll-x-contain' : ''} no-scrollbar`}
-                                            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                                            onScroll={(e) => {
-                                                // Exit edit mode on scroll
-                                                if (deletionTargetId !== null) setDeletionTargetId(null);
+                                        {/* Goals Content */}
+                                        <div>
+                                            {activeGoals.length === 1 ? (
+                                                // SINGLE GOAL (Full Width)
+                                                (() => {
+                                                    const goal = activeGoals[0];
+                                                    const progress = calculateProgress(84.1, currentWeight, goal.target); // Should use goal.startWeight if available
+                                                    const radius = 30;
+                                                    const circumference = 2 * Math.PI * radius;
+                                                    const strokeDashoffset = circumference - (progress / 100) * circumference;
+                                                    const timeContext = getTimeContext(goal);
 
-                                                // Update scroll index based on card width (approx 50% width)
-                                                // cardWidth ~ 50% of container. 
-                                                const cardWidth = e.currentTarget.offsetWidth / 2;
-                                                const index = Math.round(e.currentTarget.scrollLeft / cardWidth);
-                                                setScrollIndex(index);
-                                            }}
-                                        >
-                                            {/* Inject Styling for Wiggle */}
-                                            <style>{`
-                                                @keyframes wiggle {
-                                                    0% { transform: rotate(0deg); }
-                                                    25% { transform: rotate(-1.5deg); }
-                                                    50% { transform: rotate(0deg); }
-                                                    75% { transform: rotate(1.5deg); }
-                                                    100% { transform: rotate(0deg); }
-                                                }
-                                                .wiggle { animation: wiggle 0.15s ease-in-out infinite; }
-                                            `}</style>
-
-                                            {activeGoals.slice(0, 4).map((goal, index) => {
-                                                const isPrimary = index === 0;
-                                                const progress = calculateProgress(84.1, currentWeight, goal.target);
-                                                const radius = 30;
-                                                const circumference = 2 * Math.PI * radius;
-                                                const strokeDashoffset = circumference - (progress / 100) * circumference;
-
-                                                // Hierarchy
-                                                const strokeWidth = isPrimary ? 8 : 4;
-                                                const timeContext = getTimeContext(goal);
-
-                                                // Interaction States
-                                                const isSelected = deletionTargetId === goal.id;
-                                                const isDeleting = deletingGoalId === goal.id;
-                                                const isAnySelected = deletionTargetId !== null;
-                                                const isDimmed = isAnySelected && !isSelected;
-
-                                                // Layout: 1 goal = 100%, 2+ = 50% minus half gap (6px)
-                                                const widthClass = activeGoals.length > 1 ? 'min-w-[calc(50%-6px)] snap-start' : 'w-full';
-
-                                                return (
-                                                    <div
-                                                        key={goal.id}
-                                                        className={`relative ${widthClass} rounded-[2rem] p-6 flex flex-col items-center justify-center transition-all duration-300 transform
-                                                            ${isDarkMode ? 'bg-gray-800' : 'bg-white'} 
-                                                            ${isSelected ? 'shadow-2xl scale-[1.02] z-20 wiggle' : 'shadow-sm z-10'}
-                                                            ${isDimmed ? 'opacity-50 scale-95 blur-[1px]' : 'opacity-100'}
-                                                            ${isDeleting ? 'opacity-0 translate-y-4' : ''}
-                                                        `}
-                                                        onTouchStart={() => startLongPress(goal.id)}
-                                                        onTouchEnd={endLongPress}
-                                                        onTouchMove={handleGoalTouchMove}
-                                                        onMouseDown={() => startLongPress(goal.id)}
-                                                        onMouseUp={endLongPress}
-                                                        onMouseLeave={endLongPress}
-                                                        onClick={(e) => {
-                                                            e.stopPropagation(); // Handle click locally
-                                                            if (isSelected) {
-                                                                // Tapping the selected card (not X) -> Undo/Exit
-                                                                setDeletionTargetId(null);
-                                                            } else if (isAnySelected) {
-                                                                // Tapping another card while one is selected -> Undo/Exit (don't select new one yet)
-                                                                setDeletionTargetId(null);
-                                                            } else {
-                                                                // Normal state -> Edit Action
-                                                                handleEditGoal(goal);
-                                                            }
-                                                        }}
-                                                    >
-                                                        {/* Delete Button (Surgical) - Always rendered for transition */}
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                removeGoal(goal.id);
-                                                            }}
-                                                            className={`absolute -top-1 -right-1 bg-red-500 text-white p-2 rounded-full shadow-lg hover:bg-red-600 transition-all duration-200 
-                                                                ${isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-75 pointer-events-none'}
+                                                    return (
+                                                        <div
+                                                            key={goal.id}
+                                                            className={`relative w-full rounded-[2rem] p-6 flex flex-row items-center justify-between shadow-sm
+                                                                ${isDarkMode ? 'bg-gray-800' : 'bg-white'} 
                                                             `}
-                                                            aria-label="Delete goal"
+                                                            onClick={() => handleEditGoal(goal)}
                                                         >
-                                                            <X size={18} strokeWidth={3} />
-                                                        </button>
+                                                            {/* LEft: Text Info */}
+                                                            <div className="flex flex-col items-start">
+                                                                <h3 className={`font-bold text-xs tracking-wider mb-1 uppercase ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{goal.label}</h3>
+                                                                <p className={`font-bold text-4xl mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{goal.target}<span className='text-2xl ml-1'>kg</span></p>
 
-                                                        {/* Ring Section */}
-                                                        <div className="relative w-24 h-24 mb-2 flex items-center justify-center">
-                                                            <svg className="w-full h-full transform -rotate-90">
-                                                                <circle
-                                                                    cx="48"
-                                                                    cy="48"
-                                                                    r={radius}
-                                                                    stroke={isDarkMode ? '#374151' : '#F3F4F6'}
-                                                                    strokeWidth={strokeWidth}
-                                                                    fill="transparent"
-                                                                />
-                                                                <circle
-                                                                    cx="48"
-                                                                    cy="48"
-                                                                    r={radius}
-                                                                    stroke={goal.color}
-                                                                    strokeWidth={strokeWidth}
-                                                                    fill="transparent"
-                                                                    strokeDasharray={circumference}
-                                                                    strokeDashoffset={strokeDashoffset}
-                                                                    strokeLinecap="round"
-                                                                    className={!isPrimary ? 'opacity-50 saturate-50' : ''}
-                                                                />
-                                                            </svg>
-                                                            <span className={`absolute text-2xl ${isPrimary ? 'font-extrabold' : 'font-semibold'} ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                                                {Math.round(progress)}%
-                                                            </span>
+                                                                <div className={`flex items-center gap-1.5 font-medium text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                                    <span>by {goal.formattedDate}</span>
+                                                                    <Pencil size={14} strokeWidth={2.5} className="opacity-50" />
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Right: Ring */}
+                                                            <div className="flex flex-col items-center">
+                                                                <div className="relative w-24 h-24 mb-2 flex items-center justify-center">
+                                                                    <svg className="w-full h-full transform -rotate-90">
+                                                                        <circle cx="48" cy="48" r={radius} stroke={isDarkMode ? '#374151' : '#F3F4F6'} strokeWidth={6} fill="transparent" />
+                                                                        <circle cx="48" cy="48" r={radius} stroke={goal.color} strokeWidth={6} fill="transparent"
+                                                                            strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" />
+                                                                    </svg>
+                                                                    <span className={`absolute text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                                        {Math.round(progress)}%
+                                                                    </span>
+                                                                </div>
+                                                                <span className={`text-xs font-medium ${isDarkMode ? 'text-blue-400' : 'text-blue-500'}`}>
+                                                                    {timeContext}
+                                                                </span>
+                                                            </div>
                                                         </div>
+                                                    );
+                                                })()
+                                            ) : (
+                                                // MULTIPLE GOALS (Grid)
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    {activeGoals.slice(0, 4).map((goal) => {
+                                                        const progress = calculateProgress(84.1, currentWeight, goal.target);
+                                                        const radius = 30; // Slightly smaller for grid? user said "card height consistent". Let's keep 30.
+                                                        const circumference = 2 * Math.PI * radius;
+                                                        const strokeDashoffset = circumference - (progress / 100) * circumference;
+                                                        const timeContext = getTimeContext(goal);
 
-                                                        {/* Days Left */}
-                                                        <span className={`text-[10px] font-medium mb-4 ${isPrimary ? 'text-blue-500' : 'text-gray-400'}`}>
-                                                            {timeContext}
-                                                        </span>
+                                                        return (
+                                                            <div
+                                                                key={goal.id}
+                                                                className={`relative w-full rounded-[2rem] p-5 flex flex-col items-center justify-center text-center shadow-sm aspect-square
+                                                                    ${isDarkMode ? 'bg-gray-800' : 'bg-white'} 
+                                                                `}
+                                                                onClick={() => handleEditGoal(goal)}
+                                                            >
+                                                                {/* Ring Centered Top */}
+                                                                <div className="relative w-20 h-20 mb-3 flex items-center justify-center">
+                                                                    <svg className="w-full h-full transform -rotate-90">
+                                                                        <circle cx="40" cy="40" r={26} stroke={isDarkMode ? '#374151' : '#F3F4F6'} strokeWidth={5} fill="transparent" />
+                                                                        <circle cx="40" cy="40" r={26} stroke={goal.color} strokeWidth={5} fill="transparent"
+                                                                            strokeDasharray={2 * Math.PI * 26} strokeDashoffset={(2 * Math.PI * 26) - (progress / 100) * (2 * Math.PI * 26)} strokeLinecap="round" />
+                                                                    </svg>
+                                                                    <span className={`absolute text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                                        {Math.round(progress)}%
+                                                                    </span>
+                                                                </div>
 
-                                                        {/* Goal Details */}
-                                                        <h3 className={`font-bold text-xs tracking-wider mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{goal.label}</h3>
-                                                        <p className={`font-bold mb-1 ${isPrimary ? 'text-2xl' : 'text-xl'} ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{goal.target}kg</p>
+                                                                <span className={`text-[10px] font-bold mb-3 ${isDarkMode ? 'text-blue-400' : 'text-blue-500'}`}>
+                                                                    {timeContext}
+                                                                </span>
 
-                                                        {/* Edit Action (Restored) */}
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                if (!isSelected) handleEditGoal(goal);
-                                                            }}
-                                                            className={`flex items-center gap-1 text-xs px-2 py-1 opacity-60 hover:opacity-100 transition-opacity ${isDarkMode ? 'text-gray-500' : 'text-gray-400'} ${isSelected ? 'invisible' : ''}`}
-                                                        >
-                                                            <span>by {goal.formattedDate}</span>
-                                                            <Pencil size={12} strokeWidth={2} />
-                                                        </button>
+                                                                {/* Info Stacked */}
+                                                                <h3 className={`font-bold text-[10px] tracking-wider mb-0.5 uppercase ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{goal.label}</h3>
+                                                                <p className={`font-bold text-xl mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{goal.target}kg</p>
 
-                                                    </div>
-                                                );
-                                            })}
+                                                                <div className={`flex items-center gap-1 text-[10px] font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                                    <span>by {goal.formattedDate}</span>
+                                                                    <Pencil size={10} strokeWidth={2} className="opacity-50" />
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
 
-
-                                        </div>
-
-                                        {/* Carousel Indicators */}
-                                        {activeGoals.length > 1 && (
-                                            <div className="flex justify-center gap-2 mt-2">
-                                                {activeGoals.slice(0, 4).map((_, idx) => (
-                                                    <div
-                                                        key={idx}
-                                                        className={`h-1.5 rounded-full transition-all duration-300 ${idx === scrollIndex ? 'w-4 bg-blue-500' : 'w-1.5 bg-gray-300 dark:bg-gray-700'}`}
-                                                    ></div>
-                                                ))}
-                                            </div>
-                                        )}
-
-                                        {/* External Add Goal Action */}
-                                        {activeGoals.length < 4 && (
-                                            <div className={`flex flex-col items-start mt-5 ml-1 ${activeGoals.length > 0 ? 'opacity-85' : ''}`}>
+                                            {/* CTA Action - Centered below */}
+                                            <div className="flex flex-col items-center mt-5">
                                                 <button
-                                                    onClick={() => handleAddNewGoal()}
-                                                    className={`flex items-center gap-2 py-2 pr-4 rounded-xl transition-all active:scale-95 ${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
+                                                    onClick={() => activeGoals.length < 4 && handleAddNewGoal()}
+                                                    disabled={activeGoals.length >= 4}
+                                                    className={`py-2 px-4 font-semibold text-[15px] transition-opacity ${activeGoals.length >= 4
+                                                            ? 'opacity-40 cursor-not-allowed text-gray-400'
+                                                            : 'opacity-100 hover:opacity-80 active:opacity-60 text-[#3B82F6]'
+                                                        }`}
                                                 >
-                                                    <Plus size={14} strokeWidth={2} />
-                                                    <span className="text-[14px] font-medium">Add another goal</span>
+                                                    + Add another goal
                                                 </button>
-                                                <span className={`text-[12px] leading-none ml-[22px] ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                                                    Up to 4 goals
+                                                <span className={`text-[12px] mt-0.5 opacity-55 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                    {activeGoals.length >= 4 ? "Goal limit reached (4/4)" : "Up to 4 goals"}
                                                 </span>
                                             </div>
-                                        )}
+                                        </div>
                                     </div>
                                 );
                             })()}

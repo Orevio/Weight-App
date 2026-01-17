@@ -113,6 +113,7 @@ export default function WeightTracker() {
 
     const [editingGoal, setEditingGoal] = useState(null);
     const [editDateValue, setEditDateValue] = useState('');
+    const [editWeightValue, setEditWeightValue] = useState('');
 
     useEffect(() => {
         localStorage.setItem('weightEntries', JSON.stringify(entries));
@@ -136,15 +137,21 @@ export default function WeightTracker() {
     const handleEditGoal = (goal) => {
         setEditingGoal(goal);
         setEditDateValue(goal.date); // Assuming date is stored as YYYY-MM-DD
+        setEditWeightValue(goal.target);
     };
 
-    const saveGoalDate = () => {
-        if (editingGoal && editDateValue) {
+    const saveGoal = () => {
+        if (editingGoal && editDateValue && editWeightValue) {
             setGoals(prev => prev.map(g => {
                 if (g.id === editingGoal.id) {
                     const dateObj = new Date(editDateValue);
                     const formattedDetails = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    return { ...g, date: editDateValue, formattedDate: formattedDetails };
+                    return {
+                        ...g,
+                        date: editDateValue,
+                        formattedDate: formattedDetails,
+                        target: parseFloat(editWeightValue)
+                    };
                 }
                 return g;
             }));
@@ -440,7 +447,10 @@ export default function WeightTracker() {
 
                                         {/* Actions */}
                                         {isCompleted ? (
-                                            <button className="mt-2 text-xs font-semibold text-blue-500 hover:text-blue-600 flex items-center gap-1">
+                                            <button
+                                                onClick={() => handleEditGoal(goal)}
+                                                className="mt-2 text-xs font-semibold text-blue-500 hover:text-blue-600 flex items-center gap-1"
+                                            >
                                                 Set new goal <ArrowRight size={12} />
                                             </button>
                                         ) : (
@@ -640,40 +650,62 @@ export default function WeightTracker() {
             </nav>
 
             {/* Edit Goal Modal */}
-            {editingGoal && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
-                    <div className={`w-full max-w-sm rounded-[2rem] p-6 shadow-xl ${isDarkMode ? 'bg-gray-800' : 'bg-white'} animate-in slide-in-from-bottom duration-300`}>
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Edit {editingGoal.label} Date</h3>
-                            <button onClick={() => setEditingGoal(null)} className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
-                                <X size={20} className={isDarkMode ? 'text-gray-400' : 'text-gray-500'} />
-                            </button>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div>
-                                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Target Date</label>
-                                <div className={`flex items-center px-4 rounded-xl ${isDarkMode ? 'bg-gray-700' : 'bg-[#F8F9FB]'}`}>
-                                    <Calendar size={20} className="text-gray-400" />
-                                    <input
-                                        type="date"
-                                        value={editDateValue}
-                                        onChange={(e) => setEditDateValue(e.target.value)}
-                                        className={`w-full bg-transparent border-none py-4 px-3 focus:ring-0 outline-none font-medium ${isDarkMode ? 'text-white [color-scheme:dark]' : 'text-gray-700'}`}
-                                    />
-                                </div>
+            {editingGoal && (() => {
+                const isGoal1Completed = currentWeight <= goals[0].target && currentWeight > 0;
+                return (
+                    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
+                        <div className={`w-full max-w-sm rounded-[2rem] p-6 shadow-xl ${isDarkMode ? 'bg-gray-800' : 'bg-white'} animate-in slide-in-from-bottom duration-300`}>
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                    {isGoal1Completed && editingGoal.id === 1 ? 'Set New Goal' : `Edit ${editingGoal.label}`}
+                                </h3>
+                                <button onClick={() => setEditingGoal(null)} className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    <X size={20} className={isDarkMode ? 'text-gray-400' : 'text-gray-500'} />
+                                </button>
                             </div>
 
-                            <button
-                                onClick={saveGoalDate}
-                                className="w-full bg-[#3B82F6] text-white font-bold py-4 rounded-xl hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/30"
-                            >
-                                Update Date
-                            </button>
+                            <div className="space-y-6">
+                                {/* Target Weight Input */}
+                                <div>
+                                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Target Weight</label>
+                                    <div className={`flex items-center px-4 rounded-xl ${isDarkMode ? 'bg-gray-700' : 'bg-[#F8F9FB]'}`}>
+                                        <Target size={20} className="text-gray-400" />
+                                        <input
+                                            type="number"
+                                            value={editWeightValue}
+                                            onChange={(e) => setEditWeightValue(e.target.value)}
+                                            placeholder="Target Weight"
+                                            className={`w-full bg-transparent border-none py-4 px-3 focus:ring-0 outline-none font-medium ${isDarkMode ? 'text-white [color-scheme:dark]' : 'text-gray-700'}`}
+                                        />
+                                        <span className="text-gray-400 text-sm font-medium">kg</span>
+                                    </div>
+                                </div>
+
+                                {/* Target Date Input */}
+                                <div>
+                                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Target Date</label>
+                                    <div className={`flex items-center px-4 rounded-xl ${isDarkMode ? 'bg-gray-700' : 'bg-[#F8F9FB]'}`}>
+                                        <Calendar size={20} className="text-gray-400" />
+                                        <input
+                                            type="date"
+                                            value={editDateValue}
+                                            onChange={(e) => setEditDateValue(e.target.value)}
+                                            className={`w-full bg-transparent border-none py-4 px-3 focus:ring-0 outline-none font-medium ${isDarkMode ? 'text-white [color-scheme:dark]' : 'text-gray-700'}`}
+                                        />
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={saveGoal}
+                                    className="w-full bg-[#3B82F6] text-white font-bold py-4 rounded-xl hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/30"
+                                >
+                                    Update Goal
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
 
         </div>
     );
